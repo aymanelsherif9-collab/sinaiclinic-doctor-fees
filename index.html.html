@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>نظام إدارة أتعاب الأطباء - سيناء كلينك</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --primary: #0284c7;
+      --primary-dark: #0369a1;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #1e293b;
+      --border: #cbd5e1;
+      --danger: #dc2626;
+      --success: #16a34a;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 15px;
+    }
+    .container {
+      max-width: 1250px;
+      margin: 0 auto;
+    }
+    header {
+      background: var(--card-bg);
+      padding: 15px 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      margin-bottom: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-right: 5px solid var(--primary);
+    }
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+    }
+    .tab-btn {
+      padding: 10px 16px;
+      background: #e2e8f0;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: 0.2s;
+    }
+    .tab-btn.active {
+      background: var(--primary);
+      color: white;
+    }
+    .card {
+      background: var(--card-bg);
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+      display: none;
+    }
+    .card.active { display: block; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-bottom: 15px;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    label { font-size: 0.85rem; font-weight: 600; color: #475569; }
+    input, select, textarea {
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      font-size: 0.9rem;
+    }
+    button.submit-btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 0.95rem;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button.submit-btn:hover { background: var(--primary-dark); }
+    .status-msg {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 5px;
+      display: none;
+    }
+    .status-success { background: #dcfce7; color: #15803d; }
+    .status-error { background: #fee2e2; color: #b91c1c; }
+
+    /* شاشة تسجيل الدخول */
+    #login-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    .login-box {
+      background: #ffffff;
+      padding: 30px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 400px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      border-top: 5px solid var(--primary);
+    }
+
+    /* تنسيق الشيت الرسمي المعتمد للطباعة */
+    .official-sheet {
+      border: 2px solid #000;
+      padding: 25px;
+      background: #fff;
+      margin-top: 15px;
+      color: #000;
+    }
+    .sheet-title {
+      text-align: center;
+      font-size: 1.25rem;
+      font-weight: bold;
+      border: 2px solid #000;
+      padding: 8px;
+      margin-bottom: 15px;
+      background: #f1f5f9;
+    }
+    .sheet-meta {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 15px;
+      font-weight: bold;
+      font-size: 0.95rem;
+    }
+    table.official-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+    table.official-table th, table.official-table td {
+      border: 1px solid #000;
+      padding: 8px;
+      text-align: center;
+      font-size: 0.9rem;
+    }
+    table.official-table th { background-color: #f8fafc; }
+    .signatures {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 45px;
+      padding: 0 10px;
+      font-weight: bold;
+      text-align: center;
+    }
+    .sig-block {
+      width: 18%;
+      border-top: 1px dashed #000;
+      padding-top: 8px;
+    }
+
+    .kpi-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .kpi-card {
+      background: #f1f5f9;
+      border-right: 4px solid var(--primary);
+      padding: 15px;
+      border-radius: 8px;
+    }
+    .kpi-val {
+      font-size: 1.4rem;
+      font-weight: bold;
+      color: var(--primary-dark);
+      margin-top: 5px;
+    }
+
+    .page-break {
+      page-break-before: always;
+      break-before: page;
+      margin-top: 30px;
+    }
+
+    @media print {
+      body * { visibility: hidden; }
+      #printable-area, #printable-area *, #print-summary-area, #print-summary-area * { visibility: visible; }
+      #printable-area, #print-summary-area { position: absolute; left: 0; top: 0; width: 100%; }
+      .no-print { display: none !important; }
+      .official-sheet { border: 1.5px solid #000; padding: 15px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- نافذة تسجيل الدخول الإلزامية -->
+<div id="login-overlay">
+  <div class="login-box">
+    <h3 style="margin-top:0; text-align:center; color:var(--primary);">تسجيل الدخول للنظام</h3>
+    <p style="font-size:0.85rem; color:#64748b; text-align:center; margin-bottom:20px;">مستشفى سيناء كلينك - شرم الشيخ</p>
+    <form onsubmit="handleLogin(event)">
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>المستخدم / الدور الوظيفي:</label>
+        <select id="login_user" required style="width:100%; font-weight:bold;"></select>
+      </div>
+      <div class="form-group" style="margin-bottom:20px;">
+        <label>رمز المرور (PIN Code):</label>
+        <input type="password" id="login_pin" placeholder="أدخل رمز المرور" required style="width:100%; text-align:center; font-size:1.1rem; letter-spacing:3px;">
+      </div>
+      <button type="submit" class="submit-btn" style="width:100%;">دخول المنظومة</button>
+      <div id="login-error" style="color:var(--danger); font-size:0.85rem; margin-top:10px; text-align:center; display:none;">رمز المرور غير صحيح!</div>
+    </form>
+  </div>
+</div>
+
+<div class="container" id="app-container" style="display:none;">
+  <header class="no-print">
+    <div>
+      <h2 style="margin:0;">نظام حسابات أتعاب الأطباء</h2>
+      <small style="color: #64748b;">مستشفى سيناء كلينك - شرم الشيخ</small>
+    </div>
+    <div style="display:flex; align-items:center; gap:12px;">
+      <span id="current-user-badge" style="padding:5px 10px; border-radius:5px; font-size:0.85rem; background:#e0f2fe; color:#0369a1; font-weight:bold;">-</span>
+      <button class="submit-btn" style="background:#dc2626; padding:6px 12px; font-size:0.8rem;" onclick="logout()">تسجيل خروج</button>
+    </div>
+  </header>
+
+  <div class="tabs no-print">
+    <button class="tab-btn active" id="btn-tab-sheet" onclick="switchTab('tab-sheet')">كشف الحساب والتقرير الفردي</button>
+    <button class="tab-btn" id="btn-tab-summary" onclick="switchTab('tab-summary')">مسير الأتعاب المجمع (الإدارة المالية)</button>
+    <button class="tab-btn" id="btn-tab-daily" onclick="switchTab('tab-daily')">تسجيل الحركات اليومية</button>
+    <button class="tab-btn" id="btn-tab-adjustments" onclick="switchTab('tab-adjustments')">إدخال استقطاعات وبدلات</button>
+    <button class="tab-btn" id="btn-tab-contract" onclick="switchTab('tab-contract')">إعداد ملف الطبيب والعقد</button>
+  </div>
+
+  <!-- 1. شاشة كشف الحساب الفردي والملحق -->
+  <div id="tab-sheet" class="card active">
+    <div class="no-print" style="display:flex; gap:10px; align-items:flex-end; margin-bottom:15px; background:#f1f5f9; padding:15px; border-radius:8px; flex-wrap:wrap;">
+      <div class="form-group">
+        <label>الطبيب المعالج:</label>
+        <select id="sheet_doctor" style="min-width:240px; font-weight:bold;"></select>
+      </div>
+      <div class="form-group">
+        <label>من تاريخ:</label>
+        <input type="date" id="sheet_from_date">
+      </div>
+      <div class="form-group">
+        <label>إلى تاريخ:</label>
+        <input type="date" id="sheet_to_date">
+      </div>
+      <button class="submit-btn" onclick="generateOfficialStatement()">عرض كشف الحساب</button>
+      <button class="submit-btn" style="background:#475569;" onclick="window.print()">طباعة الشيت والملحق</button>
+    </div>
+
+    <div id="printable-area">
+      <div class="official-sheet" id="sheet-content" style="display:none;">
+        <div class="sheet-title" id="out-header-title">أتعاب الطبيب عن الفترة</div>
+        <div class="sheet-meta">
+          <div>اسم الطبيب: <span id="out-doc-name">-</span></div>
+          <div>الهاتف: <span id="out-doc-phone">-</span></div>
+          <div>الحساب البنكي: <span id="out-doc-bank">-</span></div>
+        </div>
+
+        <table class="official-table">
+          <thead>
+            <tr>
+              <th>من يوم</th>
+              <th>إلى يوم</th>
+              <th>عدد الأيام / الشفتات</th>
+              <th>الأجر اليومي / الشفت</th>
+              <th>الإجمالي الأساسي</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td id="out-from-day">-</td>
+              <td id="out-to-day">-</td>
+              <td id="out-days-count">0</td>
+              <td id="out-day-rate">0.00</td>
+              <td id="out-base-total" style="font-weight:bold;">0.00</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div style="font-weight:bold; margin-bottom:8px;">بيان بنود الاتفاق والإيرادات والاستقطاعات:</div>
+        <table class="official-table">
+          <thead>
+            <tr>
+              <th style="width:70%;">إتفاقــــــــــات / بيــــــــــان</th>
+              <th style="width:30%;">الإجمالـــــــي (ج.م)</th>
+            </tr>
+          </thead>
+          <tbody id="out-breakdown-body"></tbody>
+          <tfoot>
+            <tr style="background:#f8fafc; font-size:1.1rem; font-weight:bold;">
+              <td style="text-align:left; padding-left:20px;">صافي المستحق للطبيب:</td>
+              <td id="out-net-total" style="color:var(--primary-dark);">0.00</td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <div class="signatures">
+          <div class="sig-block">محاسب</div>
+          <div class="sig-block">رئيس حسابات المرضى</div>
+          <div class="sig-block">المدير الطبي</div>
+          <div class="sig-block">المدير المالي</div>
+          <div class="sig-block">المدير العام</div>
+        </div>
+
+        <div class="page-break"></div>
+        <div class="sheet-title" style="margin-top:20px;">ملحق بيان تفاصيل الحالات والخدمات الطبية المنفذة</div>
+        <table class="official-table">
+          <thead>
+            <tr>
+              <th>م</th>
+              <th>رقم الملف / الحالة</th>
+              <th>التاريخ</th>
+              <th>اسم المريض</th>
+              <th>الفئة / جهة التعامل</th>
+              <th>البيان / الخدمة الطبية</th>
+              <th>أتعاب الطبيب (ج.م)</th>
+            </tr>
+          </thead>
+          <tbody id="out-patients-body"></tbody>
+          <tfoot>
+            <tr style="background:#f8fafc; font-weight:bold;">
+              <td colspan="6" style="text-align:left; padding-left:15px;">إجمالي أتعاب الحالات والخدمات المنفذة:</td>
+              <td id="out-cases-sum" style="color:var(--primary-dark);">0.00</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. شاشة التقرير المجمع لإدارة المستشفى -->
+  <div id="tab-summary" class="card">
+    <div class="no-print" style="display:flex; gap:10px; align-items:flex-end; margin-bottom:15px; background:#f1f5f9; padding:15px; border-radius:8px; flex-wrap:wrap;">
+      <div class="form-group">
+        <label>من تاريخ:</label>
+        <input type="date" id="sum_from_date">
+      </div>
+      <div class="form-group">
+        <label>إلى تاريخ:</label>
+        <input type="date" id="sum_to_date">
+      </div>
+      <button class="submit-btn" onclick="generateManagementSummary()">عرض المسير المجمع</button>
+      <button class="submit-btn" style="background:#059669;" onclick="exportSummaryToCSV()">تصدير Excel (CSV)</button>
+      <button class="submit-btn" style="background:#475569;" onclick="window.print()">طباعة المسير</button>
+    </div>
+
+    <div id="print-summary-area">
+      <div class="kpi-container no-print">
+        <div class="kpi-card">
+          <small>إجمالي صافي أتعاب الأطباء</small>
+          <div class="kpi-val" id="kpi-total-net">0.00 ج.م</div>
+        </div>
+        <div class="kpi-card">
+          <small>إجمالي الأجور الأساسية / الشفتات</small>
+          <div class="kpi-val" id="kpi-total-base">0.00 ج.م</div>
+        </div>
+        <div class="kpi-card">
+          <small>إجمالي أتعاب العمليات والعيادات</small>
+          <div class="kpi-val" id="kpi-total-prod">0.00 ج.م</div>
+        </div>
+        <div class="kpi-card">
+          <small>إجمالي الاستقطاعات والخصومات</small>
+          <div class="kpi-val" style="color:var(--danger);" id="kpi-total-ded">0.00 ج.م</div>
+        </div>
+      </div>
+
+      <div class="official-sheet" id="summary-sheet-box" style="margin-top:0;">
+        <div class="sheet-title" id="sum-header-title">مسير أتعاب الأطباء المجمع عن الفترة</div>
+        <table class="official-table" id="summary-table">
+          <thead>
+            <tr>
+              <th>كود</th>
+              <th>اسم الطبيب</th>
+              <th>القسم الطبي</th>
+              <th>أيام/شفتات</th>
+              <th>الأساسي (ج.م)</th>
+              <th>العيادات (ج.م)</th>
+              <th>العمليات (ج.م)</th>
+              <th>استقطاعات (-)</th>
+              <th>بدلات (+)</th>
+              <th>صافي المستحق (ج.م)</th>
+              <th>الحساب البنكي للصرف</th>
+            </tr>
+          </thead>
+          <tbody id="summary-table-body">
+            <tr><td colspan="11" style="text-align:center;">حدد الفترة واضغط "عرض المسير المجمع".</td></tr>
+          </tbody>
+          <tfoot id="summary-table-foot"></tfoot>
+        </table>
+
+        <div class="signatures">
+          <div class="sig-block">محاسب الرواتب</div>
+          <div class="sig-block">رئيس حسابات المرضى</div>
+          <div class="sig-block">المدير الطبي</div>
+          <div class="sig-block">المدير المالي</div>
+          <div class="sig-block">المدير العام</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. شاشة الحركات اليومية -->
+  <div id="tab-daily" class="card">
+    <h3>تسجيل الحركات اليومية (ورديات / عمليات / عيادات)</h3>
+    <form id="form-daily" onsubmit="saveDaily(event)">
+      <div class="grid">
+        <div class="form-group">
+          <label style="color:var(--primary); font-size:0.95rem;">اختر الطبيب أولاً:</label>
+          <select id="daily_doctor" style="border: 2px solid var(--primary); font-weight:bold;" required></select>
+        </div>
+        <div class="form-group">
+          <label>التاريخ:</label>
+          <input type="date" id="daily_date" required>
+        </div>
+        <div class="form-group">
+          <label>نوع الحركة:</label>
+          <select id="daily_type" onchange="toggleFields(this.value)">
+            <option value="surgery">عمليات جراحية</option>
+            <option value="clinic">عيادات خارجية</option>
+            <option value="shift">ورديات ونوبتجيات</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="form-group">
+          <label>رقم الملف / الحالة الطبية:</label>
+          <input type="text" id="daily_file_no" placeholder="مثال: 116444 أو MD-5021">
+        </div>
+        <div class="form-group">
+          <label>اسم المريض:</label>
+          <input type="text" id="daily_patient" placeholder="اسم المريض بالكامل">
+        </div>
+        <div class="form-group">
+          <label>الفئة المالية / جهة الدفع:</label>
+          <input type="text" id="daily_payer" placeholder="مثال: CASH.EG أو REMED أو نقدي">
+        </div>
+      </div>
+
+      <div id="f-surgery" class="grid">
+        <div class="form-group">
+          <label>اسم الإجراء / العملية:</label>
+          <input type="text" id="s_name" placeholder="مثال: استئصال زائدة / ولادة قيصرية">
+        </div>
+        <div class="form-group">
+          <label>أتعاب الطبيب المستحقة (ج.م):</label>
+          <input type="number" id="s_share" value="900">
+        </div>
+      </div>
+
+      <div id="f-clinic" class="grid" style="display:none;">
+        <div class="form-group">
+          <label>إجمالي الكشف (ج.م):</label>
+          <input type="number" id="c_total" value="250">
+        </div>
+        <div class="form-group">
+          <label>نسبة الطبيب (%):</label>
+          <input type="number" id="c_pct" value="50">
+        </div>
+      </div>
+
+      <div id="f-shift" class="grid" style="display:none;">
+        <div class="form-group">
+          <label>عدد الأيام / الشفتات:</label>
+          <input type="number" step="0.5" id="sh_days" value="1">
+        </div>
+        <div class="form-group">
+          <label>قيمة الأجر اليومي (ج.م):</label>
+          <input type="number" id="sh_rate" value="1700">
+        </div>
+      </div>
+
+      <button type="submit" class="submit-btn" style="background:var(--success); font-size:1.05rem;">تسجيل الحركة الآن</button>
+      <div id="daily-msg" class="status-msg"></div>
+    </form>
+  </div>
+
+  <!-- 4. شاشة الاستقطاعات والبدلات -->
+  <div id="tab-adjustments" class="card">
+    <h3>تسجيل الاستقطاعات والتسويات والبدلات (سلفيات / وجبات / كهرباء / انتقال)</h3>
+    <form id="form-adj" onsubmit="saveAdjustment(event)">
+      <div class="grid">
+        <div class="form-group">
+          <label>الطبيب:</label>
+          <select id="adj_doctor" required></select>
+        </div>
+        <div class="form-group">
+          <label>التاريخ:</label>
+          <input type="date" id="adj_date" required>
+        </div>
+        <div class="form-group">
+          <label>النوع:</label>
+          <select id="adj_type">
+            <option value="DEDUCTION">استقطاع / خصم (-)</option>
+            <option value="ALLOWANCE">بدل / إضافة (+)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>المبلغ (ج.م):</label>
+          <input type="number" step="0.01" id="adj_amount" placeholder="مثال: 1075.16" required>
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:15px;">
+        <label>بيان الاستقطاع أو البدل:</label>
+        <input type="text" id="adj_desc" placeholder="مثال: خصم كهرباء عن شهر سبتمبر" required>
+      </div>
+      <button type="submit" class="submit-btn">حفظ في كشف حساب الطبيب</button>
+      <div id="adj-msg" class="status-msg"></div>
+    </form>
+  </div>
+
+  <!-- 5. شاشة ملف الطبيب -->
+  <div id="tab-contract" class="card">
+    <h3>تسجيل طبيب وبياناته البنكية والتعاقدية</h3>
+    <form id="form-doc" onsubmit="saveDoc(event)">
+      <div class="grid">
+        <div class="form-group">
+          <label>كود الطبيب:</label>
+          <input type="text" id="d_code" placeholder="مثال: DOC-106" required>
+        </div>
+        <div class="form-group">
+          <label>الاسم الكامل:</label>
+          <input type="text" id="d_name" placeholder="اسم الطبيب كاملاً" required>
+        </div>
+        <div class="form-group">
+          <label>القسم الطبي:</label>
+          <select id="d_dept" required></select>
+        </div>
+        <div class="form-group">
+          <label>التخصص / اللقب:</label>
+          <input type="text" id="d_title" placeholder="أخصائي تخدير / جراحة">
+        </div>
+        <div class="form-group">
+          <label>رقم الهاتف:</label>
+          <input type="text" id="d_phone" placeholder="01xxxxxxxxx">
+        </div>
+        <div class="form-group">
+          <label>البنك والحساب:</label>
+          <input type="text" id="d_bank" placeholder="CIB Bank 1000xxxx">
+        </div>
+      </div>
+      <button type="submit" class="submit-btn">حفظ بيانات الطبيب</button>
+      <div id="doc-msg" class="status-msg"></div>
+    </form>
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL = "https://vdakauaddbdegvugqujr.supabase.co";
+  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZkYWthdWFkZGJkZWd2dWdxdWpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEwMTI4MzAsImV4cCI6MjEwNjU4ODgzMH0.m52KFsbP-e1V5a938FqBP2-XHU7FR3nGHlsl46cfnUY";
+  const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  let appUsersList = [];
+  let currentUser = null;
+  let doctorsList = [];
+  let departmentsList = [];
+  let lastSummaryData = [];
+
+  // 1. إدارة تسجيل الدخول والتحقق
+  async function loadUsersForLogin() {
+    try {
+      const { data: users, error } = await client.from('app_users').select('*').order('id');
+      if (error) throw error;
+      appUsersList = users || [];
+      document.getElementById('login_user').innerHTML = appUsersList.map(u => `<option value="${u.username}">${u.full_name}</option>`).join('');
+    } catch(e) {
+      console.error(e);
+      document.getElementById('login_user').innerHTML = '<option value="">تعذر الاتصال بالمستخدمين</option>';
+    }
+  }
+
+  function handleLogin(e) {
+    e.preventDefault();
+    const uname = document.getElementById('login_user').value;
+    const pin = document.getElementById('login_pin').value;
+    const user = appUsersList.find(u => u.username === uname);
+
+    if (user && user.pin_code === pin) {
+      currentUser = user;
+      document.getElementById('login-overlay').style.display = 'none';
+      document.getElementById('app-container').style.display = 'block';
+      document.getElementById('current-user-badge').innerText = `${user.full_name} (${user.role})`;
+      applyPermissions(user.role);
+      init();
+    } else {
+      document.getElementById('login-error').style.display = 'block';
+    }
+  }
+
+  function logout() {
+    currentUser = null;
+    document.getElementById('login-overlay').style.display = 'flex';
+    document.getElementById('app-container').style.display = 'none';
+    document.getElementById('login_pin').value = '';
+    document.getElementById('login-error').style.display = 'none';
+  }
+
+  // تطبيق مصفوفة الصلاحيات
+  function applyPermissions(role) {
+    const btnSheet = document.getElementById('btn-tab-sheet');
+    const btnSummary = document.getElementById('btn-tab-summary');
+    const btnDaily = document.getElementById('btn-tab-daily');
+    const btnAdj = document.getElementById('btn-tab-adjustments');
+    const btnContract = document.getElementById('btn-tab-contract');
+
+    // إعادة ضبط الرؤية
+    [btnSheet, btnSummary, btnDaily, btnAdj, btnContract].forEach(b => b.style.display = 'inline-block');
+
+    if (role === 'SUPER_ADMIN') {
+      // وصول كامل لكافة الشاشات
+      switchTab('tab-sheet');
+    } else if (role === 'PATIENT_ACC_ENTRY') {
+      // مدخل الحركات: حجب المسير المجمع والاستقطاعات وإعداد العقود
+      btnSummary.style.display = 'none';
+      btnAdj.style.display = 'none';
+      btnContract.style.display = 'none';
+      switchTab('tab-daily');
+    } else if (role === 'PATIENT_ACC_AUDIT') {
+      // مراجع الحسابات: حجب المسير المجمع وإعداد ملفات الأطباء
+      btnSummary.style.display = 'none';
+      btnContract.style.display = 'none';
+      switchTab('tab-sheet');
+    }
+  }
+
+  function switchTab(id) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+    const targetBtn = document.getElementById('btn-' + id);
+    if (targetBtn) targetBtn.classList.add('active');
+    document.getElementById(id).classList.add('active');
+    if (id === 'tab-summary') generateManagementSummary();
+  }
+
+  function toggleFields(v) {
+    document.getElementById('f-surgery').style.display = v === 'surgery' ? 'grid' : 'none';
+    document.getElementById('f-clinic').style.display = v === 'clinic' ? 'grid' : 'none';
+    document.getElementById('f-shift').style.display = v === 'shift' ? 'grid' : 'none';
+  }
+
+  async function init() {
+    try {
+      const { data: depts } = await client.from('departments').select('*');
+      departmentsList = depts || [];
+      document.getElementById('d_dept').innerHTML = departmentsList.map(dp => `<option value="${dp.id}">${dp.name}</option>`).join('');
+
+      const { data: docs } = await client.from('doctors').select('*').order('id', { ascending: false });
+      doctorsList = docs || [];
+      
+      const docOptions = ['<option value="">-- اختر الطبيب --</option>']
+        .concat(doctorsList.map(d => `<option value="${d.id}">${d.full_name} (${d.doctor_code})</option>`))
+        .join('');
+      
+      document.getElementById('sheet_doctor').innerHTML = docOptions;
+      document.getElementById('adj_doctor').innerHTML = docOptions;
+      document.getElementById('daily_doctor').innerHTML = docOptions;
+
+      const now = new Date();
+      const first = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+      const last = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+      
+      document.getElementById('sheet_from_date').value = first;
+      document.getElementById('sheet_to_date').value = last;
+      document.getElementById('sum_from_date').value = first;
+      document.getElementById('sum_to_date').value = last;
+      document.getElementById('adj_date').value = now.toISOString().split('T')[0];
+      document.getElementById('daily_date').value = now.toISOString().split('T')[0];
+    } catch(e) {
+      console.error(e);
+    }
+  }
+
+  async function saveDaily(e) {
+    e.preventDefault();
+    const sel = document.getElementById('daily_doctor');
+    if (!sel.value) {
+      alert('يرجى اختيار الطبيب أولاً!');
+      return;
+    }
+
+    const docId = parseInt(sel.value);
+    const docName = sel.options[sel.selectedIndex].text;
+    const doc = doctorsList.find(d => d.id === docId);
+    const deptId = (doc && doc.department_id) ? doc.department_id : (departmentsList[0] ? departmentsList[0].id : null);
+
+    const date = document.getElementById('daily_date').value;
+    const type = document.getElementById('daily_type').value;
+    const fileNo = document.getElementById('daily_file_no').value || '-';
+    const patientName = document.getElementById('daily_patient').value || 'مريض غير مسجل';
+    const payer = document.getElementById('daily_payer').value || 'نقدي';
+    const msg = document.getElementById('daily-msg');
+
+    try {
+      if (type === 'surgery') {
+        const sName = document.getElementById('s_name').value || 'إجراء جراحي';
+        const sShare = parseFloat(document.getElementById('s_share').value) || 0;
+        const { error } = await client.from('surgical_procedures').insert([{
+          doctor_id: docId,
+          department_id: deptId,
+          procedure_date: date,
+          patient_file_number: fileNo,
+          patient_name: patientName,
+          notes: payer,
+          procedure_name: sName,
+          category_name: 'جراحة',
+          doctor_share_amount: sShare
+        }]);
+        if (error) throw error;
+      } else if (type === 'clinic') {
+        const tot = parseFloat(document.getElementById('c_total').value) || 0;
+        const pct = parseFloat(document.getElementById('c_pct').value) || 0;
+        const { error } = await client.from('clinic_visits').insert([{
+          doctor_id: docId,
+          department_id: deptId,
+          visit_date: date,
+          patient_file_number: fileNo,
+          patient_name: patientName,
+          service_type: payer,
+          total_amount: tot,
+          doctor_share_amount: tot * (pct / 100)
+        }]);
+        if (error) throw error;
+      } else if (type === 'shift') {
+        const days = parseFloat(document.getElementById('sh_days').value) || 1;
+        const rate = parseFloat(document.getElementById('sh_rate').value) || 0;
+        const { error } = await client.from('doctor_shifts').insert([{
+          doctor_id: docId,
+          department_id: deptId,
+          shift_date: date,
+          shift_type: 'DAILY',
+          days_count: days,
+          shift_calculated_amount: days * rate
+        }]);
+        if (error) throw error;
+      }
+
+      msg.innerText = `تم تسجيل الحركة بنجاح وتوجيهها للطبيب: ${docName}`;
+      msg.className = 'status-msg status-success';
+      msg.style.display = 'block';
+    } catch(err) {
+      msg.innerText = 'خطأ: ' + err.message;
+      msg.className = 'status-msg status-error';
+      msg.style.display = 'block';
+    }
+  }
+
+  async function saveAdjustment(e) {
+    e.preventDefault();
+    const sel = document.getElementById('adj_doctor');
+    if (!sel.value) {
+      alert('يرجى اختيار الطبيب أولاً!');
+      return;
+    }
+    const docId = parseInt(sel.value);
+    const docName = sel.options[sel.selectedIndex].text;
+    const date = document.getElementById('adj_date').value;
+    const type = document.getElementById('adj_type').value;
+    const amt = parseFloat(document.getElementById('adj_amount').value);
+    const desc = document.getElementById('adj_desc').value;
+    const msg = document.getElementById('adj-msg');
+
+    try {
+      const { error } = await client.from('doctor_adjustments').insert([{
+        doctor_id: docId,
+        adjustment_date: date,
+        item_type: type,
+        amount: amt,
+        description: desc
+      }]);
+      if (error) throw error;
+
+      msg.innerText = `تم حفظ البند بنجاح للطبيب: ${docName}`;
+      msg.className = 'status-msg status-success';
+      msg.style.display = 'block';
+      document.getElementById('form-adj').reset();
+      document.getElementById('adj_date').value = new Date().toISOString().split('T')[0];
+    } catch(err) {
+      msg.innerText = 'خطأ: ' + err.message;
+      msg.className = 'status-msg status-error';
+      msg.style.display = 'block';
+    }
+  }
+
+  async function generateOfficialStatement() {
+    const sel = document.getElementById('sheet_doctor');
+    if (!sel.value) {
+      alert('يرجى اختيار الطبيب أولاً!');
+      return;
+    }
+    const docId = parseInt(sel.value);
+    const fromDate = document.getElementById('sheet_from_date').value;
+    const toDate = document.getElementById('sheet_to_date').value;
+    const doc = doctorsList.find(d => d.id === docId);
+
+    if (!doc) return;
+
+    const [shiftsRes, clinicsRes, surgRes, adjsRes] = await Promise.all([
+      client.from('doctor_shifts').select('*').eq('doctor_id', docId).gte('shift_date', fromDate).lte('shift_date', toDate),
+      client.from('clinic_visits').select('*').eq('doctor_id', docId).gte('visit_date', fromDate).lte('visit_date', toDate),
+      client.from('surgical_procedures').select('*').eq('doctor_id', docId).gte('procedure_date', fromDate).lte('procedure_date', toDate),
+      client.from('doctor_adjustments').select('*').eq('doctor_id', docId).gte('adjustment_date', fromDate).lte('adjustment_date', toDate)
+    ]);
+
+    const shifts = shiftsRes.data || [];
+    const clinics = clinicsRes.data || [];
+    const surgeries = surgRes.data || [];
+    const adjs = adjsRes.data || [];
+
+    document.getElementById('out-header-title').innerText = `أتعاب ${doc.title || 'طبيب'} ${doc.full_name} من ${fromDate} إلى ${toDate}`;
+    document.getElementById('out-doc-name').innerText = doc.full_name;
+    document.getElementById('out-doc-phone').innerText = doc.phone || '-';
+    document.getElementById('out-doc-bank').innerText = (doc.bank_name || '') + ' ' + (doc.bank_account_no || '-');
+
+    let daysCount = shifts.reduce((s, x) => s + parseFloat(x.days_count || 1), 0);
+    let shiftTotal = shifts.reduce((s, x) => s + parseFloat(x.shift_calculated_amount || 0), 0);
+    let dayRate = daysCount > 0 ? (shiftTotal / daysCount) : 0;
+
+    document.getElementById('out-from-day').innerText = fromDate;
+    document.getElementById('out-to-day').innerText = toDate;
+    document.getElementById('out-days-count').innerText = daysCount;
+    document.getElementById('out-day-rate').innerText = dayRate.toLocaleString(undefined, {minimumFractionDigits: 2});
+    document.getElementById('out-base-total').innerText = shiftTotal.toLocaleString(undefined, {minimumFractionDigits: 2});
+
+    let rowsHtml = '';
+    let runningNet = shiftTotal;
+
+    let patientsHtml = '';
+    let casesSum = 0;
+    let counter = 1;
+
+    surgeries.forEach(s => {
+      const amt = parseFloat(s.doctor_share_amount || 0);
+      runningNet += amt;
+      casesSum += amt;
+      rowsHtml += `<tr><td style="text-align:right;">عملية: ${s.procedure_name} (${s.patient_name || ''})</td><td>${amt.toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>`;
+      patientsHtml += `
+        <tr>
+          <td>${counter++}</td>
+          <td>${s.patient_file_number || '-'}</td>
+          <td>${s.procedure_date}</td>
+          <td>${s.patient_name || '-'}</td>
+          <td>${s.notes || 'نقدي'}</td>
+          <td>${s.procedure_name}</td>
+          <td style="font-weight:bold;">${amt.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+        </tr>
+      `;
+    });
+
+    clinics.forEach(c => {
+      const amt = parseFloat(c.doctor_share_amount || 0);
+      casesSum += amt;
+      patientsHtml += `
+        <tr>
+          <td>${counter++}</td>
+          <td>${c.patient_file_number || '-'}</td>
+          <td>${c.visit_date}</td>
+          <td>${c.patient_name || '-'}</td>
+          <td>${c.service_type || 'نقدي'}</td>
+          <td>كشف عيادة خارجية</td>
+          <td style="font-weight:bold;">${amt.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+        </tr>
+      `;
+    });
+
+    const clinicSum = clinics.reduce((s, x) => s + parseFloat(x.doctor_share_amount || 0), 0);
+    if (clinicSum > 0) {
+      runningNet += clinicSum;
+      rowsHtml += `<tr><td style="text-align:right;">إجمالي أتعاب العيادات الخارجية</td><td>${clinicSum.toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>`;
+    }
+
+    adjs.forEach(a => {
+      const isDed = (a.item_type === 'DEDUCTION' || (a.description && a.description.includes('خصم')));
+      const val = Math.abs(parseFloat(a.amount));
+      if (isDed) {
+        runningNet -= val;
+        rowsHtml += `<tr><td style="text-align:right;">${a.description}</td><td style="color:var(--danger); font-weight:bold;">-${val.toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>`;
+      } else {
+        runningNet += val;
+        rowsHtml += `<tr><td style="text-align:right;">${a.description}</td><td style="color:var(--success); font-weight:bold;">+${val.toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>`;
+      }
+    });
+
+    document.getElementById('out-breakdown-body').innerHTML = rowsHtml || '<tr><td colspan="2">لا توجد بنود إضافية مسجلة للفترة.</td></tr>';
+    document.getElementById('out-net-total').innerText = runningNet.toLocaleString(undefined, {minimumFractionDigits: 2}) + ' ج.م';
+
+    document.getElementById('out-patients-body').innerHTML = patientsHtml || '<tr><td colspan="7" style="text-align:center;">لا توجد حالات تفصيلية مسجلة لهذه الفترة.</td></tr>';
+    document.getElementById('out-cases-sum').innerText = casesSum.toLocaleString(undefined, {minimumFractionDigits: 2}) + ' ج.م';
+
+    document.getElementById('sheet-content').style.display = 'block';
+  }
+
+  async function generateManagementSummary() {
+    const fromDate = document.getElementById('sum_from_date').value;
+    const toDate = document.getElementById('sum_to_date').value;
+    document.getElementById('sum-header-title').innerText = `مسير أتعاب الأطباء المجمع عن الفترة من ${fromDate} إلى ${toDate}`;
+
+    const [shiftsRes, clinicsRes, surgRes, adjsRes] = await Promise.all([
+      client.from('doctor_shifts').select('*').gte('shift_date', fromDate).lte('shift_date', toDate),
+      client.from('clinic_visits').select('*').gte('visit_date', fromDate).lte('visit_date', toDate),
+      client.from('surgical_procedures').select('*').gte('procedure_date', fromDate).lte('procedure_date', toDate),
+      client.from('doctor_adjustments').select('*').gte('adjustment_date', fromDate).lte('adjustment_date', toDate)
+    ]);
+
+    const shifts = shiftsRes.data || [];
+    const clinics = clinicsRes.data || [];
+    const surgeries = surgRes.data || [];
+    const adjs = adjsRes.data || [];
+
+    let rowsHtml = '';
+    let totNet = 0, totBase = 0, totProd = 0, totDed = 0;
+    lastSummaryData = [];
+
+    doctorsList.forEach(d => {
+      const docDept = departmentsList.find(dp => dp.id === d.department_id);
+      const deptName = docDept ? docDept.name : '-';
+
+      const dShifts = shifts.filter(x => x.doctor_id === d.id);
+      const dClinics = clinics.filter(x => x.doctor_id === d.id);
+      const dSurgeries = surgeries.filter(x => x.doctor_id === d.id);
+      const dAdjs = adjs.filter(x => x.doctor_id === d.id);
+
+      const days = dShifts.reduce((s, x) => s + parseFloat(x.days_count || 1), 0);
+      const baseAmt = dShifts.reduce((s, x) => s + parseFloat(x.shift_calculated_amount || 0), 0);
+      const clinicAmt = dClinics.reduce((s, x) => s + parseFloat(x.doctor_share_amount || 0), 0);
+      const surgAmt = dSurgeries.reduce((s, x) => s + parseFloat(x.doctor_share_amount || 0), 0);
+
+      let dedAmt = 0;
+      let allowAmt = 0;
+      dAdjs.forEach(a => {
+        const isDed = (a.item_type === 'DEDUCTION' || (a.description && a.description.includes('خصم')));
+        const val = Math.abs(parseFloat(a.amount));
+        if (isDed) dedAmt += val;
+        else allowAmt += val;
+      });
+
+      const netAmt = baseAmt + clinicAmt + surgAmt + allowAmt - dedAmt;
+
+      if (days > 0 || clinicAmt > 0 || surgAmt > 0 || dedAmt > 0 || allowAmt > 0) {
+        totNet += netAmt;
+        totBase += baseAmt;
+        totProd += (clinicAmt + surgAmt);
+        totDed += dedAmt;
+
+        lastSummaryData.push({
+          code: d.doctor_code,
+          name: d.full_name,
+          dept: deptName,
+          days: days,
+          base: baseAmt,
+          clinic: clinicAmt,
+          surgery: surgAmt,
+          ded: dedAmt,
+          allow: allowAmt,
+          net: netAmt,
+          bank: (d.bank_name || '') + ' ' + (d.bank_account_no || '-')
+        });
+
+        rowsHtml += `
+          <tr>
+            <td><strong>${d.doctor_code}</strong></td>
+            <td style="text-align:right;"><strong>${d.full_name}</strong></td>
+            <td>${deptName}</td>
+            <td>${days}</td>
+            <td>${baseAmt.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+            <td>${clinicAmt.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+            <td>${surgAmt.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+            <td style="color:var(--danger);">${dedAmt > 0 ? '-' + dedAmt.toLocaleString(undefined, {minimumFractionDigits: 2}) : '0.00'}</td>
+            <td style="color:var(--success);">${allowAmt > 0 ? '+' + allowAmt.toLocaleString(undefined, {minimumFractionDigits: 2}) : '0.00'}</td>
+            <td style="font-weight:bold; color:var(--primary-dark);">${netAmt.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+            <td style="font-size:0.85rem;">${d.bank_name || ''} ${d.bank_account_no || '-'}</td>
+          </tr>
+        `;
+      }
+    });
+
+    document.getElementById('summary-table-body').innerHTML = rowsHtml || '<tr><td colspan="11" style="text-align:center;">لا توجد حركات مسجلة خلال الفترة المحددة.</td></tr>';
+    
+    document.getElementById('summary-table-foot').innerHTML = `
+      <tr style="background:#f1f5f9; font-weight:bold; font-size:1rem;">
+        <td colspan="4" style="text-align:left; padding-left:15px;">الإجماليات العامة للمستشفى:</td>
+        <td>${totBase.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+        <td colspan="2">${totProd.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+        <td style="color:var(--danger);">-${totDed.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+        <td>-</td>
+        <td style="color:var(--primary-dark); font-size:1.1rem;">${totNet.toLocaleString(undefined, {minimumFractionDigits: 2})} ج.م</td>
+        <td>-</td>
+      </tr>
+    `;
+
+    document.getElementById('kpi-total-net').innerText = totNet.toLocaleString(undefined, {minimumFractionDigits: 2}) + ' ج.م';
+    document.getElementById('kpi-total-base').innerText = totBase.toLocaleString(undefined, {minimumFractionDigits: 2}) + ' ج.م';
+    document.getElementById('kpi-total-prod').innerText = totProd.toLocaleString(undefined, {minimumFractionDigits: 2}) + ' ج.م';
+    document.getElementById('kpi-total-ded').innerText = totDed.toLocaleString(undefined, {minimumFractionDigits: 2}) + ' ج.م';
+  }
+
+  function exportSummaryToCSV() {
+    if (!lastSummaryData.length) {
+      alert('لا توجد بيانات لتصديرها!');
+      return;
+    }
+    let csv = '\uFEFF';
+    csv += 'كود الطبيب,اسم الطبيب,القسم,أيام/شفتات,الأساسي,عيادات,عمليات,استقطاعات,بدلات,صافي المستحق,الحساب البنكي\n';
+    lastSummaryData.forEach(r => {
+      csv += `"${r.code}","${r.name}","${r.dept}",${r.days},${r.base},${r.clinic},${r.surgery},${r.ded},${r.allow},${r.net},"${r.bank}"\n`;
+    });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `مسير_أتعاب_الأطباء_${document.getElementById('sum_from_date').value}_إلى_${document.getElementById('sum_to_date').value}.csv`;
+    link.click();
+  }
+
+  async function saveDoc(e) {
+    e.preventDefault();
+    const msg = document.getElementById('doc-msg');
+    try {
+      const { error } = await client.from('doctors').insert([{
+        doctor_code: document.getElementById('d_code').value,
+        full_name: document.getElementById('d_name').value,
+        department_id: parseInt(document.getElementById('d_dept').value),
+        title: document.getElementById('d_title').value,
+        phone: document.getElementById('d_phone').value,
+        bank_name: document.getElementById('d_bank').value
+      }]);
+      if (error) throw error;
+
+      msg.innerText = 'تم حفظ الطبيب بنجاح في السحابة!';
+      msg.className = 'status-msg status-success';
+      msg.style.display = 'block';
+      document.getElementById('form-doc').reset();
+      await init();
+    } catch(err) {
+      msg.innerText = 'خطأ: ' + err.message;
+      msg.className = 'status-msg status-error';
+      msg.style.display = 'block';
+    }
+  }
+
+  window.onload = loadUsersForLogin;
+</script>
+</body>
+</html>
