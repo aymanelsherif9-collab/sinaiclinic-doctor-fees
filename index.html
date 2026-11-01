@@ -126,17 +126,6 @@
       display: flex; gap: 10px; align-items: center; margin-bottom: 8px;
       background: #f1f5f9; padding: 8px; border-radius: 6px;
     }
-
-    .auto-badge {
-      display: inline-block;
-      background: #e0f2fe;
-      color: #0369a1;
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-size: 0.75rem;
-      font-weight: bold;
-      margin-right: 5px;
-    }
   </style>
 </head>
 <body>
@@ -180,18 +169,18 @@
     <button class="tab-btn" id="btn-tab-adjustments" onclick="switchTab('tab-adjustments')">إدخال استقطاعات وبدلات</button>
   </div>
 
-  <!-- تبويب إعداد ملف الطبيب والعقد الشامل مع ميزة التعديل واسترجاع البيانات -->
+  <!-- تبويب إعداد ملف الطبيب والعقد الشامل -->
   <div id="tab-contract" class="card active">
     
-    <!-- شريط اختيار طبيب مسجل لاسترجاع عقده أو إضافة جديد -->
-    <div style="background:#e0f2fe; border:1px solid #7dd3fc; padding:12px 15px; border-radius:8px; margin-bottom:15px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <!-- شريط اختيار طبيب مسجل مسبقاً لاسترجاع بياناته -->
+    <div style="background:#e0f2fe; border:2px solid #0284c7; padding:12px 15px; border-radius:8px; margin-bottom:15px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
       <div style="display:flex; align-items:center; gap:10px; flex:1; min-width:280px;">
-        <label style="font-weight:bold; color:#0369a1; white-space:nowrap;">تعديل عقد طبيب مسجل مسبقاً:</label>
-        <select id="edit_doctor_select" onchange="fetchAndPopulateDoctorContract(this.value)" style="font-weight:bold; width:100%; max-width:320px;">
-          <option value="">-- اختر طبيباً مسجلاً لعرض وتعديل بنوده --</option>
+        <label style="font-weight:bold; color:#0369a1; font-size:0.95rem; white-space:nowrap;">تعديل عقد طبيب مسجل مسبقاً:</label>
+        <select id="edit_doctor_select" onchange="fetchAndPopulateDoctorContract(this.value)" style="font-weight:bold; font-size:0.95rem; width:100%; max-width:350px; background:#fff; border:2px solid #0284c7;">
+          <option value="">-- اضغط هنا لاختيار الطبيب --</option>
         </select>
       </div>
-      <button type="button" class="submit-btn" style="background:#0284c7; padding:7px 15px; font-size:0.85rem;" onclick="resetContractFormForNewDoctor()">+ تسجيل طبيب جديد من البداية</button>
+      <button type="button" class="submit-btn" style="background:#0284c7; padding:8px 16px; font-size:0.85rem;" onclick="resetContractFormForNewDoctor()">+ تسجيل طبيب جديد</button>
     </div>
 
     <h3 id="contract-form-title" style="margin-top:0;">إعداد اللائحة المالية وتعاقد الطبيب</h3>
@@ -323,7 +312,6 @@
     </form>
   </div>
 
-  <!-- التبويبات الأخرى -->
   <div id="tab-daily" class="card"><h3>تسجيل الحركات اليومية</h3></div>
   <div id="tab-sheet" class="card"><h3>كشف الحساب والتقرير الفردي</h3></div>
   <div id="tab-summary" class="card"><h3>مسير الأتعاب المجمع</h3></div>
@@ -384,4 +372,267 @@
       <div class="custom-proc-row">
         <span style="font-weight:bold; flex:2;">إجراء مخصص: ${cp.name}</span>
         <span style="color:var(--primary-dark); font-weight:bold; flex:1;">${cp.fee.toFixed(2)} ج.م (أجر بالاتفاق)</span>
-        <button type="button" style="background:var
+        <button type="button" style="background:var(--danger); color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;" onclick="removeCustomProcedure(${idx})">حذف</button>
+      </div>
+    `).join('');
+  }
+
+  // دالة تحميل الأطباء والأقسام المحدثة والمباشرة
+  async function loadDoctorsDropdown() {
+    try {
+      const { data: docs, error } = await client.from('doctors').select('*').order('id', { ascending: false });
+      if (error) throw error;
+      doctorsList = docs || [];
+
+      const selectEl = document.getElementById('edit_doctor_select');
+      if (selectEl) {
+        if (doctorsList.length === 0) {
+          selectEl.innerHTML = '<option value="">لا يوجد أطباء مسجلون حتى الآن</option>';
+        } else {
+          selectEl.innerHTML = '<option value="">-- اضغط هنا لاختيار الطبيب --</option>' + 
+            doctorsList.map(d => `<option value="${d.id}">${d.full_name} (${d.doctor_code})</option>`).join('');
+        }
+      }
+    } catch(err) {
+      console.error('Error loading doctors:', err);
+    }
+
+    try {
+      const { data: depts } = await client.from('departments').select('*');
+      if (depts && document.getElementById('cd_dept')) {
+        document.getElementById('cd_dept').innerHTML = depts.map(dp => `<option value="${dp.id}">${dp.name}</option>`).join('');
+      }
+    } catch(err) {
+      console.error('Error loading departments:', err);
+    }
+  }
+
+  // دالة استدعاء وتحميل عقد طبيب سابق لتعديله
+  async function fetchAndPopulateDoctorContract(docId) {
+    if (!docId) {
+      resetContractFormForNewDoctor();
+      return;
+    }
+
+    const doc = doctorsList.find(d => d.id == docId);
+    if (!doc) return;
+
+    document.getElementById('editing_doc_id').value = doc.id;
+    document.getElementById('contract-form-title').innerText = `تعديل اللائحة والتعاقد لـ: ${doc.full_name} (${doc.doctor_code})`;
+    document.getElementById('btn-save-contract').innerText = `تحديث واعتماد عقد الطبيب: ${doc.full_name}`;
+
+    // تعبئة البيانات الوظيفية
+    document.getElementById('cd_code').value = doc.doctor_code || '';
+    document.getElementById('cd_name').value = doc.full_name || '';
+    document.getElementById('cd_dept').value = doc.department_id || '';
+    document.getElementById('cd_tier').value = doc.professional_tier || 'SPECIALIST';
+    document.getElementById('cd_role').value = doc.role_in_theatre || 'SURGEON';
+    document.getElementById('cd_bank').value = doc.bank_name || '';
+    adjustTheatreFields(doc.role_in_theatre || 'SURGEON');
+
+    // تعبئة الوردية والعيادة
+    document.getElementById('cd_shift_basis').value = doc.shift_basis || 'DAILY';
+    document.getElementById('cd_base_rate').value = doc.base_shift_rate || 0;
+    document.getElementById('cd_clinic_type').value = doc.clinic_calculation_type || 'GROSS';
+    document.getElementById('cd_clinic_pct').value = doc.clinic_share_pct || 50;
+
+    // استدعاء مصفوفة العمليات من السحابة
+    const { data: surgRates } = await client.from('doctor_surgery_rates').select('*').eq('doctor_id', docId);
+    if (surgRates && surgRates.length > 0) {
+      const mapLevelPrefix = {
+        'SIMPLE': 'm_simp', 'MINOR': 'm_minor', 'INTERMEDIATE': 'm_inter',
+        'MAJOR': 'm_major', 'ADVANCED': 'm_adv', 'SPECIAL_NATURE': 'm_spec', 'HIGH_SKILL': 'm_skill'
+      };
+      const mapNatSuffix = {
+        'RESIDENT': 'res', 'EAST_EUROPEAN': 'ee', 'WEST_EUROPEAN': 'we', 'RESIDENT_X2': 'rx2'
+      };
+
+      surgRates.forEach(r => {
+        const pref = mapLevelPrefix[r.operation_level];
+        const suff = mapNatSuffix[r.nationality_category];
+        if (pref && suff) {
+          const el = document.getElementById(`${pref}_${suff}`);
+          if (el) el.value = r.fee_amount;
+        }
+      });
+    }
+
+    // استدعاء الفحوصات والإجراءات
+    const { data: procs } = await client.from('doctor_procedure_rates').select('*').eq('doctor_id', docId);
+    ['proc_xray','proc_us','proc_ct','proc_mri','proc_echo','proc_cast','proc_suture','proc_joint'].forEach(id => {
+      document.getElementById(id).value = 0;
+    });
+    customProceduresList = [];
+
+    if (procs && procs.length > 0) {
+      const mapStandardProcs = {
+        'XRAY': 'proc_xray', 'ULTRASOUND': 'proc_us', 'CT': 'proc_ct', 'MRI': 'proc_mri',
+        'ECHO': 'proc_echo', 'CASTING': 'proc_cast', 'SUTURING': 'proc_suture', 'JOINT_INJECTION': 'proc_joint'
+      };
+
+      procs.forEach(p => {
+        if (mapStandardProcs[p.service_code]) {
+          document.getElementById(mapStandardProcs[p.service_code]).value = p.fee_amount;
+        } else {
+          customProceduresList.push({ name: p.service_name, fee: parseFloat(p.fee_amount) });
+        }
+      });
+    }
+    renderCustomProcedures();
+  }
+
+  function resetContractFormForNewDoctor() {
+    document.getElementById('form-full-contract').reset();
+    document.getElementById('editing_doc_id').value = '';
+    document.getElementById('edit_doctor_select').value = '';
+    document.getElementById('contract-form-title').innerText = 'إعداد اللائحة المالية وتعاقد طبيب جديد';
+    document.getElementById('btn-save-contract').innerText = 'حفظ ملف وتعاقد الطبيب في السحابة';
+    customProceduresList = [];
+    renderCustomProcedures();
+    adjustTheatreFields('SURGEON');
+  }
+
+  async function loadUsersForLogin() {
+    try {
+      const { data: users } = await client.from('app_users').select('*').order('id');
+      appUsersList = users || [];
+      document.getElementById('login_user').innerHTML = appUsersList.map(u => `<option value="${u.username}">${u.full_name}</option>`).join('');
+    } catch(e) { console.error(e); }
+  }
+
+  function handleLogin(e) {
+    e.preventDefault();
+    const uname = document.getElementById('login_user').value;
+    const pin = document.getElementById('login_pin').value;
+    const user = appUsersList.find(u => u.username === uname);
+    if (user && user.pin_code === pin) {
+      currentUser = user;
+      document.getElementById('login-overlay').style.display = 'none';
+      document.getElementById('app-container').style.display = 'block';
+      document.getElementById('current-user-badge').innerText = `${user.full_name} (${user.role})`;
+      loadDoctorsDropdown(); // إعادة تأكيد التحميل بعد الدخول مباشرة
+    } else {
+      document.getElementById('login-error').style.display = 'block';
+    }
+  }
+
+  function logout() {
+    currentUser = null;
+    document.getElementById('login-overlay').style.display = 'flex';
+    document.getElementById('app-container').style.display = 'none';
+    document.getElementById('login_pin').value = '';
+  }
+
+  function switchTab(id) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+    const t = document.getElementById('btn-' + id);
+    if (t) t.classList.add('active');
+    document.getElementById(id).classList.add('active');
+  }
+
+  async function saveFullContract(e) {
+    e.preventDefault();
+    const msg = document.getElementById('contract-msg');
+    msg.style.display = 'none';
+
+    try {
+      const editDocId = document.getElementById('editing_doc_id').value;
+      const docPayload = {
+        doctor_code: document.getElementById('cd_code').value,
+        full_name: document.getElementById('cd_name').value,
+        department_id: parseInt(document.getElementById('cd_dept').value),
+        professional_tier: document.getElementById('cd_tier').value,
+        role_in_theatre: document.getElementById('cd_role').value,
+        shift_basis: document.getElementById('cd_shift_basis').value,
+        base_shift_rate: parseFloat(document.getElementById('cd_base_rate').value) || 0,
+        clinic_calculation_type: document.getElementById('cd_clinic_type').value,
+        clinic_share_pct: parseFloat(document.getElementById('cd_clinic_pct').value) || 0,
+        bank_name: document.getElementById('cd_bank').value
+      };
+
+      let docId = editDocId ? parseInt(editDocId) : null;
+
+      if (docId) {
+        const { error: updErr } = await client.from('doctors').update(docPayload).eq('id', docId);
+        if (updErr) throw updErr;
+      } else {
+        const { data: savedDoc, error: docErr } = await client.from('doctors').insert([docPayload]).select();
+        if (docErr) throw docErr;
+        docId = savedDoc[0].id;
+      }
+
+      await client.from('doctor_surgery_rates').delete().eq('doctor_id', docId);
+      await client.from('doctor_procedure_rates').delete().eq('doctor_id', docId);
+
+      if (docPayload.role_in_theatre === 'SURGEON') {
+        const levels = [
+          { level: 'SIMPLE', prefix: 'm_simp' },
+          { level: 'MINOR', prefix: 'm_minor' },
+          { level: 'INTERMEDIATE', prefix: 'm_inter' },
+          { level: 'MAJOR', prefix: 'm_major' },
+          { level: 'ADVANCED', prefix: 'm_adv' },
+          { level: 'SPECIAL_NATURE', prefix: 'm_spec' },
+          { level: 'HIGH_SKILL', prefix: 'm_skill' }
+        ];
+
+        let surgeryRows = [];
+        levels.forEach(lv => {
+          surgeryRows.push(
+            { doctor_id: docId, operation_level: lv.level, nationality_category: 'RESIDENT', fee_amount: parseFloat(document.getElementById(`${lv.prefix}_res`).value) || 0 },
+            { doctor_id: docId, operation_level: lv.level, nationality_category: 'EAST_EUROPEAN', fee_amount: parseFloat(document.getElementById(`${lv.prefix}_ee`).value) || 0 },
+            { doctor_id: docId, operation_level: lv.level, nationality_category: 'WEST_EUROPEAN', fee_amount: parseFloat(document.getElementById(`${lv.prefix}_we`).value) || 0 },
+            { doctor_id: docId, operation_level: lv.level, nationality_category: 'RESIDENT_X2', fee_amount: parseFloat(document.getElementById(`${lv.prefix}_rx2`).value) || 0 }
+          );
+        });
+        await client.from('doctor_surgery_rates').insert(surgeryRows);
+      }
+
+      let procs = [
+        { code: 'XRAY', name: 'أشعة عادية', val: parseFloat(document.getElementById('proc_xray').value) || 0 },
+        { code: 'ULTRASOUND', name: 'سونار', val: parseFloat(document.getElementById('proc_us').value) || 0 },
+        { code: 'CT', name: 'أشعة مقطعية', val: parseFloat(document.getElementById('proc_ct').value) || 0 },
+        { code: 'MRI', name: 'رنين مغناطيسي', val: parseFloat(document.getElementById('proc_mri').value) || 0 },
+        { code: 'ECHO', name: 'إيكو قلب', val: parseFloat(document.getElementById('proc_echo').value) || 0 },
+        { code: 'CASTING', name: 'تجبيس', val: parseFloat(document.getElementById('proc_cast').value) || 0 },
+        { code: 'SUTURING', name: 'غرز جراحية ثانوية', val: parseFloat(document.getElementById('proc_suture').value) || 0 },
+        { code: 'JOINT_INJECTION', name: 'حقن مفاصل', val: parseFloat(document.getElementById('proc_joint').value) || 0 }
+      ].filter(p => p.val > 0).map(p => ({
+        doctor_id: docId, service_code: p.code, service_name: p.name, fee_amount: p.val, is_custom: false
+      }));
+
+      customProceduresList.forEach((cp, idx) => {
+        procs.push({
+          doctor_id: docId,
+          service_code: `CUSTOM_${Date.now()}_${idx}`,
+          service_name: cp.name,
+          fee_amount: cp.fee,
+          is_custom: true
+        });
+      });
+
+      if (procs.length > 0) {
+        await client.from('doctor_procedure_rates').insert(procs);
+      }
+
+      msg.innerText = editDocId ? 'تم تحديث واعتماد عقد ولائحة الطبيب بنجاح!' : 'تم حفظ عقد الطبيب الجديد بنجاح!';
+      msg.className = 'status-msg status-success';
+      msg.style.display = 'block';
+
+      await loadDoctorsDropdown();
+      document.getElementById('edit_doctor_select').value = docId;
+    } catch(err) {
+      msg.innerText = 'خطأ: ' + err.message;
+      msg.className = 'status-msg status-error';
+      msg.style.display = 'block';
+    }
+  }
+
+  // تشغيل تحميل المستخدمين وقائمة الأطباء فوراً عند فتح الصفحة
+  window.onload = function() {
+    loadUsersForLogin();
+    loadDoctorsDropdown();
+  };
+</script>
+</body>
+</html>
