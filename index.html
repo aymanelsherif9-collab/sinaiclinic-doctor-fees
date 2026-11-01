@@ -126,6 +126,57 @@
       display: flex; gap: 10px; align-items: center; margin-bottom: 8px;
       background: #f1f5f9; padding: 8px; border-radius: 6px;
     }
+    .auto-badge {
+      display: inline-block;
+      background: #e0f2fe;
+      color: #0369a1;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      margin-right: 5px;
+    }
+
+    /* تنسيقات الطباعة والشيت الرسمي المعتمد */
+    .official-sheet {
+      border: 2px solid #0f172a;
+      padding: 25px;
+      background: #ffffff;
+      margin-top: 15px;
+      color: #000;
+    }
+    .sheet-title {
+      text-align: center; font-size: 1.25rem; font-weight: bold;
+      border: 2px solid #0f172a; padding: 8px; margin-bottom: 15px; background: #f8fafc;
+    }
+    .sheet-meta {
+      display: flex; justify-content: space-between; margin-bottom: 15px; font-weight: bold; font-size: 0.95rem;
+    }
+    table.official-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    table.official-table th, table.official-table td { border: 1px solid #334155; padding: 8px; text-align: center; font-size: 0.9rem; }
+    table.official-table th { background-color: #f1f5f9; font-weight: bold; }
+
+    .signatures-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      margin-top: 40px;
+      text-align: center;
+      font-size: 0.85rem;
+      font-weight: bold;
+    }
+    .signature-slot {
+      border-top: 1px solid #000;
+      padding-top: 8px;
+    }
+
+    @media print {
+      body { background: #fff; padding: 0; }
+      .no-print, header, .tabs, button { display: none !important; }
+      .card { display: block !important; box-shadow: none; padding: 0; }
+      #login-overlay { display: none !important; }
+      .page-break { page-break-before: always; }
+    }
   </style>
 </head>
 <body>
@@ -164,18 +215,18 @@
   <div class="tabs no-print">
     <button class="tab-btn active" id="btn-tab-contract" onclick="switchTab('tab-contract')">إعداد ملف الطبيب والعقد الشامل</button>
     <button class="tab-btn" id="btn-tab-daily" onclick="switchTab('tab-daily')">تسجيل الحركات اليومية</button>
+    <button class="tab-btn" id="btn-tab-adjustments" onclick="switchTab('tab-adjustments')">إدخال استقطاعات وبدلات</button>
     <button class="tab-btn" id="btn-tab-sheet" onclick="switchTab('tab-sheet')">كشف الحساب والتقرير الفردي</button>
     <button class="tab-btn" id="btn-tab-summary" onclick="switchTab('tab-summary')">مسير الأتعاب المجمع (الإدارة المالية)</button>
-    <button class="tab-btn" id="btn-tab-adjustments" onclick="switchTab('tab-adjustments')">إدخال استقطاعات وبدلات</button>
   </div>
 
+  <!-- 1. تبويب إعداد ملف الطبيب والعقد الشامل -->
   <div id="tab-contract" class="card active">
-    
     <div style="background:#e0f2fe; border:2px solid #0284c7; padding:12px 15px; border-radius:8px; margin-bottom:15px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
       <div style="display:flex; align-items:center; gap:10px; flex:1; min-width:280px;">
         <label style="font-weight:bold; color:#0369a1; font-size:0.95rem; white-space:nowrap;">تعديل عقد طبيب مسجل مسبقاً:</label>
         <select id="edit_doctor_select" onchange="fetchAndPopulateDoctorContract(this.value)" style="font-weight:bold; font-size:0.95rem; width:100%; max-width:350px; background:#fff; border:2px solid #0284c7;">
-          <option value="">-- اختر الطبيب لعرض لائحته وبنوده --</option>
+          <option value="">-- اضغط هنا لاختيار الطبيب --</option>
         </select>
       </div>
       <button type="button" class="submit-btn" style="background:#0284c7; padding:8px 16px; font-size:0.85rem;" onclick="resetContractFormForNewDoctor()">+ تسجيل طبيب جديد</button>
@@ -188,7 +239,6 @@
     <form id="form-full-contract" onsubmit="saveFullContract(event)">
       <input type="hidden" id="editing_doc_id" value="">
 
-      <!-- 1. البيانات الوظيفية والدرجة -->
       <div class="section-box">
         <h4 class="section-title">1. البيانات الوظيفية والدرجة المهنية</h4>
         <div class="grid">
@@ -216,7 +266,6 @@
         </div>
       </div>
 
-      <!-- 2. الأجر الأساسي والورديات -->
       <div class="section-box">
         <h4 class="section-title">2. الأجر الأساسي ونظام الوردية (العمالة)</h4>
         <div class="grid">
@@ -240,7 +289,6 @@
         </div>
       </div>
 
-      <!-- 3. لائحة بونص العمليات الجراحية الـ 7 -->
       <div class="section-box" id="sec-theatre">
         <h4 class="section-title" id="theatre-title">3. مصفوفة بونص وأتعاب العمليات الجراحية (7 مستويات قياسية)</h4>
         <div id="surgeon-matrix-box">
@@ -276,7 +324,6 @@
         </div>
       </div>
 
-      <!-- 4. لائحة بونص الفحوصات والعيادات والإجراءات الجديدة بالاتفاق -->
       <div class="section-box">
         <h4 class="section-title">4. بونص تقارير الأشعة والقلب وإجراءات العيادات</h4>
         <div class="grid">
@@ -312,10 +359,254 @@
     </form>
   </div>
 
-  <div id="tab-daily" class="card"><h3>تسجيل الحركات اليومية</h3></div>
-  <div id="tab-sheet" class="card"><h3>كشف الحساب والتقرير الفردي</h3></div>
-  <div id="tab-summary" class="card"><h3>مسير الأتعاب المجمع</h3></div>
-  <div id="tab-adjustments" class="card"><h3>تسجيل الاستقطاعات والبدلات</h3></div>
+  <!-- 2. تبويب تسجيل الحركات اليومية المربوط آلياً بالعقد -->
+  <div id="tab-daily" class="card">
+    <h3>تسجيل الحركات اليومية والأتعاب الآلية</h3>
+    <form id="form-daily-auto" onsubmit="saveAutoDailyMovement(event)">
+      <div class="section-box">
+        <h4 class="section-title">بيانات الحالة والجهة</h4>
+        <div class="grid">
+          <div class="form-group">
+            <label>اختر الطبيب المعالج:</label>
+            <select id="act_doctor" style="border:2px solid var(--primary); font-weight:bold;" onchange="loadDoctorContractRates(this.value)" required></select>
+          </div>
+          <div class="form-group"><label>التاريخ:</label><input type="date" id="act_date" required></div>
+          <div class="form-group">
+            <label>نوع الحركة:</label>
+            <select id="act_main_type" onchange="toggleActivityType(this.value)">
+              <option value="surgery">عملية جراحية (7 مستويات)</option>
+              <option value="procedure">فحوصات / أشعة / إجراءات عيادات وبالاتفاق</option>
+              <option value="clinic">كشف عيادة خارجية</option>
+              <option value="shift">وردية تواجد / عمالة</option>
+            </select>
+          </div>
+          <div class="form-group"><label>رقم الملف / الفاتورة:</label><input type="text" id="act_file_no" placeholder="مثال: 44102"></div>
+          <div class="form-group"><label>اسم المريض:</label><input type="text" id="act_patient_name" placeholder="اسم المريض بالكامل"></div>
+        </div>
+      </div>
+
+      <!-- نموذج الجراحة -->
+      <div class="section-box" id="box-act-surgery">
+        <h4 class="section-title">تفاصيل العملية واحتساب البونص</h4>
+        <div class="grid">
+          <div class="form-group">
+            <label>مستوى العملية الجراحية:</label>
+            <select id="act_surg_level" onchange="calculateAutoSurgeryFee()">
+              <option value="SIMPLE">عمليات بسيطة</option>
+              <option value="MINOR">عمليات صغرى</option>
+              <option value="INTERMEDIATE">عمليات متوسطة</option>
+              <option value="MAJOR">عمليات كبرى</option>
+              <option value="ADVANCED">عمليات متقدمة</option>
+              <option value="SPECIAL_NATURE">ذات طابع خاص</option>
+              <option value="HIGH_SKILL">مهارة خاصة</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>فئة جنسية المريض:</label>
+            <select id="act_surg_nat" onchange="calculateAutoSurgeryFee()">
+              <option value="RESIDENT">مقيم / مصري</option>
+              <option value="EAST_EUROPEAN">أوروبي شرقي</option>
+              <option value="WEST_EUROPEAN">أوروبي غربي</option>
+              <option value="RESIDENT_X2">مقيم فئة مضاعفة (×2)</option>
+            </select>
+          </div>
+          <div class="form-group"><label>اسم العملية:</label><input type="text" id="act_surg_name" placeholder="مثال: استئصال مرارة بالمنظار"></div>
+          <div class="form-group">
+            <label>أتعاب الطبيب المستحقة <span class="auto-badge">محسوبة آلياً</span>:</label>
+            <input type="number" step="0.01" id="act_surg_fee" style="font-weight:bold; color:var(--primary-dark); background:#f1f5f9;" required>
+          </div>
+        </div>
+      </div>
+
+      <!-- نموذج الفحوصات والإجراءات -->
+      <div class="section-box" id="box-act-procedure" style="display:none;">
+        <h4 class="section-title">الفحوصات وإجراءات العيادات المعتمدة في عقد الطبيب</h4>
+        <div class="grid">
+          <div class="form-group" style="grid-column: span 2;">
+            <label>اختر الخدمة أو الإجراء الاتفاقي المسجل للطبيب:</label>
+            <select id="act_proc_select" onchange="applyProcedureFee(this.value)" style="font-weight:bold;"></select>
+          </div>
+          <div class="form-group">
+            <label>أتعاب الإجراء <span class="auto-badge">محسوبة آلياً</span>:</label>
+            <input type="number" step="0.01" id="act_proc_fee" style="font-weight:bold; color:var(--primary-dark); background:#f1f5f9;" required>
+          </div>
+        </div>
+      </div>
+
+      <!-- نموذج العيادة -->
+      <div class="section-box" id="box-act-clinic" style="display:none;">
+        <h4 class="section-title">حساب كشف العيادة الخارجية</h4>
+        <div class="grid">
+          <div class="form-group"><label>قيمة الكشف (ج.م):</label><input type="number" id="act_clinic_total" value="300" oninput="calculateClinicShare()"></div>
+          <div class="form-group"><label>تكلفة المستهلكات والخامات:</label><input type="number" id="act_clinic_consumables" value="0" oninput="calculateClinicShare()"></div>
+          <div class="form-group"><label>نسبة الطبيب المعتمدة (%):</label><input type="number" id="act_clinic_pct_display" readonly style="background:#f1f5f9;"></div>
+          <div class="form-group"><label>حصة الطبيب المستحقة <span class="auto-badge">محسوبة آلياً</span>:</label><input type="number" step="0.01" id="act_clinic_share" style="font-weight:bold; color:var(--primary-dark); background:#f1f5f9;" required></div>
+        </div>
+      </div>
+
+      <!-- نموذج الوردية -->
+      <div class="section-box" id="box-act-shift" style="display:none;">
+        <h4 class="section-title">تسجيل وردية تواجد (العمالة)</h4>
+        <div class="grid">
+          <div class="form-group"><label>عدد أيام / شفتات التواجد:</label><input type="number" step="0.5" id="act_shift_days" value="1" oninput="calculateShiftTotal()"></div>
+          <div class="form-group"><label>أجر الوردية المعتمد بالعقد:</label><input type="number" id="act_shift_rate_display" readonly style="background:#f1f5f9;"></div>
+          <div class="form-group"><label>إجمالي أجر التواجد <span class="auto-badge">محسوب آلياً</span>:</label><input type="number" step="0.01" id="act_shift_total" style="font-weight:bold; color:var(--primary-dark); background:#f1f5f9;" required></div>
+        </div>
+      </div>
+
+      <button type="submit" class="submit-btn" style="width:100%; font-size:1.05rem; background:var(--success);">تسجيل الحركة وتثبيت الأتعاب آلياً</button>
+      <div id="auto-act-msg" class="status-msg"></div>
+    </form>
+  </div>
+
+  <!-- 3. تبويب إدخال الاستقطاعات والبدلات -->
+  <div id="tab-adjustments" class="card">
+    <h3>إدخال الاستقطاعات والتسويات والبدلات</h3>
+    <form id="form-adj" onsubmit="saveAdjustment(event)">
+      <div class="grid">
+        <div class="form-group"><label>اختر الطبيب:</label><select id="adj_doctor" required></select></div>
+        <div class="form-group"><label>التاريخ:</label><input type="date" id="adj_date" required></div>
+        <div class="form-group">
+          <label>نوع البند:</label>
+          <select id="adj_type">
+            <option value="DEDUCTION">استقطاع / خصم (سلفة - جزاء - استهلاك)</option>
+            <option value="ALLOWANCE">بدل / إضافة (بدل انتقال - مكافأة)</option>
+          </select>
+        </div>
+        <div class="form-group"><label>المبلغ (ج.م):</label><input type="number" step="0.01" id="adj_amount" required></div>
+        <div class="form-group" style="grid-column: span 2;"><label>البيان / السبب بالتفصيل:</label><input type="text" id="adj_desc" placeholder="مثال: خصم استهلاك كهرباء سكن الأطباء" required></div>
+      </div>
+      <button type="submit" class="submit-btn" style="background:#475569;">تسجيل وحفظ البند في الحساب</button>
+      <div id="adj-msg" class="status-msg"></div>
+    </form>
+  </div>
+
+  <!-- 4. تبويب كشف الحساب والتقرير الفردي والملحق التفصيلي للطباعة -->
+  <div id="tab-sheet" class="card">
+    <div class="no-print" style="display:flex; gap:10px; align-items:flex-end; margin-bottom:15px; background:#f1f5f9; padding:15px; border-radius:8px; flex-wrap:wrap;">
+      <div class="form-group"><label>الطبيب المعالج:</label><select id="sheet_doctor" style="min-width:240px; font-weight:bold;"></select></div>
+      <div class="form-group"><label>من تاريخ:</label><input type="date" id="sheet_from_date"></div>
+      <div class="form-group"><label>إلى تاريخ:</label><input type="date" id="sheet_to_date"></div>
+      <button class="submit-btn" onclick="generateOfficialStatement()">عرض كشف الحساب والملحق</button>
+      <button class="submit-btn" style="background:#0f172a;" onclick="window.print()">طباعة كشف الحساب والملحق الرسمي</button>
+    </div>
+
+    <div id="sheet-wrapper" style="display:none;">
+      <!-- كشف الحساب الإجمالي والرسمي -->
+      <div class="official-sheet">
+        <div class="sheet-title" id="out-header-title">كشف حساب أتعاب طبيب عن الفترة</div>
+        <div class="sheet-meta">
+          <div>اسم الطبيب: <span id="out-doc-name">-</span> (<span id="out-doc-tier">-</span>)</div>
+          <div>التخصص: <span id="out-doc-dept">-</span></div>
+          <div>الحساب البنكي: <span id="out-doc-bank">-</span></div>
+        </div>
+
+        <!-- جدول الورديات -->
+        <table class="official-table">
+          <thead><tr><th>من تاريخ</th><th>إلى تاريخ</th><th>عدد أيام/ورديات التواجد</th><th>أجر الوردية المتفق عليه</th><th>إجمالي التواجد الأساسي (ج.م)</th></tr></thead>
+          <tbody>
+            <tr>
+              <td id="out-from-day">-</td><td id="out-to-day">-</td><td id="out-days-count">0</td>
+              <td id="out-day-rate">0.00</td><td id="out-base-total" style="font-weight:bold;">0.00</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- جدول ملخص الأتعاب والاستقطاعات -->
+        <div style="font-weight:bold; margin-bottom:8px;">ملخص الإيرادات والاستقطاعات المعتمدة:</div>
+        <table class="official-table">
+          <thead><tr><th style="width:70%;">البيـــــــــــــــــــــــــــــــــان</th><th style="width:30%;">الإجمالـــــــي (ج.م)</th></tr></thead>
+          <tbody id="out-breakdown-body"></tbody>
+          <tfoot>
+            <tr style="background:#f8fafc; font-size:1.15rem; font-weight:bold;">
+              <td style="text-align:left; padding-left:25px;">صافي المبلغ المستحق للصرف:</td>
+              <td id="out-net-total" style="color:var(--primary-dark);">0.00</td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <!-- التوقيعات الخمسة المعتمدة -->
+        <div class="signatures-grid">
+          <div class="signature-slot">المحاسب المختص<br><br>.....................</div>
+          <div class="signature-slot">رئيس قسم الحسابات<br><br>.....................</div>
+          <div class="signature-slot">المدير المالي<br><br>.....................</div>
+          <div class="signature-slot">المدير الطبي<br><br>.....................</div>
+          <div class="signature-slot">المدير العام<br><br>.....................</div>
+        </div>
+      </div>
+
+      <!-- ملحق الحالات التفصيلي للعمليات والعيادات والإجراءات (صفحة مستقلة للطباعة) -->
+      <div class="official-sheet page-break" style="margin-top:30px;">
+        <div class="sheet-title">ملحق تفصيلي بالحالات الطبية والإجراءات المنفذة للطبيب</div>
+        <div class="sheet-meta">
+          <div>الطبيب: <span id="annex-doc-name">-</span></div>
+          <div>الفترة: <span id="annex-period">-</span></div>
+        </div>
+        <table class="official-table">
+          <thead>
+            <tr>
+              <th>م</th>
+              <th>التاريخ</th>
+              <th>رقم الملف</th>
+              <th>اسم المريض</th>
+              <th>نوع الحركة / الإجراء المنفذ</th>
+              <th>أتعاب الطبيب (ج.م)</th>
+            </tr>
+          </thead>
+          <tbody id="annex-details-body"></tbody>
+          <tfoot>
+            <tr style="background:#f1f5f9; font-weight:bold;">
+              <td colspan="5" style="text-align:left; padding-left:20px;">إجمالي أتعاب الحالات والعمليات بالملحق:</td>
+              <td id="annex-total-amount">0.00</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. تبويب مسير الأتعاب المجمع (الإدارة المالية) -->
+  <div id="tab-summary" class="card">
+    <div class="no-print" style="display:flex; gap:10px; align-items:flex-end; margin-bottom:15px; background:#f1f5f9; padding:15px; border-radius:8px; flex-wrap:wrap;">
+      <div class="form-group"><label>من تاريخ:</label><input type="date" id="sum_from_date"></div>
+      <div class="form-group"><label>إلى تاريخ:</label><input type="date" id="sum_to_date"></div>
+      <button class="submit-btn" onclick="generateManagementSummary()">عرض المسير المجمع</button>
+      <button class="submit-btn" style="background:#059669;" onclick="exportSummaryToCSV()">تصدير إكسيل (CSV)</button>
+      <button class="submit-btn" style="background:#0f172a;" onclick="window.print()">طباعة المسير</button>
+    </div>
+
+    <div class="official-sheet">
+      <div class="sheet-title" id="sum-header-title">مسير أتعاب الأطباء المجمع - مستشفى سيناء كلينك</div>
+      <table class="official-table">
+        <thead>
+          <tr>
+            <th>كود</th>
+            <th>اسم الطبيب</th>
+            <th>الدرجة</th>
+            <th>الورديات</th>
+            <th>أجر التواجد</th>
+            <th>كشوف عيادات</th>
+            <th>عمليات وإجراءات</th>
+            <th>بدلات</th>
+            <th>استقطاعات</th>
+            <th>الصافي المستحق</th>
+          </tr>
+        </thead>
+        <tbody id="summary-table-body"></tbody>
+        <tfoot>
+          <tr style="background:#f1f5f9; font-weight:bold; font-size:1rem;">
+            <td colspan="4">الإجمــــــــــــــــــــــــالي العــــــــــــــــــــام:</td>
+            <td id="sum-total-shifts">0.00</td>
+            <td id="sum-total-clinics">0.00</td>
+            <td id="sum-total-surgeries">0.00</td>
+            <td id="sum-total-allowances">0.00</td>
+            <td id="sum-total-deductions" style="color:var(--danger);">0.00</td>
+            <td id="sum-grand-net" style="color:var(--primary-dark);">0.00</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -327,6 +618,11 @@
   let currentUser = null;
   let customProceduresList = [];
   let doctorsList = [];
+  let departmentsList = [];
+  let activeDoctorContract = null;
+  let activeDoctorSurgeryRates = [];
+  let activeDoctorProcedures = [];
+  let latestSummaryData = [];
 
   function adjustTheatreFields(role) {
     if (role === 'SURGEON') {
@@ -340,107 +636,459 @@
     }
   }
 
-  function addCustomProcedureRow() {
-    const nameInput = document.getElementById('new_custom_name');
-    const feeInput = document.getElementById('new_custom_fee');
-    const name = nameInput.value.trim();
-    const fee = parseFloat(feeInput.value);
-
-    if (!name || isNaN(fee) || fee <= 0) {
-      alert('يرجى إدخال اسم الإجراء والمبلغ المتفق عليه بشكل صحيح!');
-      return;
-    }
-
-    customProceduresList.push({ name: name, fee: fee });
-    renderCustomProcedures();
-    nameInput.value = '';
-    feeInput.value = '';
-  }
-
-  function removeCustomProcedure(index) {
-    customProceduresList.splice(index, 1);
-    renderCustomProcedures();
-  }
-
-  function renderCustomProcedures() {
-    const container = document.getElementById('custom-procedures-container');
-    if (customProceduresList.length === 0) {
-      container.innerHTML = '';
-      return;
-    }
-    container.innerHTML = customProceduresList.map((cp, idx) => `
-      <div class="custom-proc-row">
-        <span style="font-weight:bold; flex:2;">إجراء مخصص: ${cp.name}</span>
-        <span style="color:var(--primary-dark); font-weight:bold; flex:1;">${cp.fee.toFixed(2)} ج.م (أجر بالاتفاق)</span>
-        <button type="button" style="background:var(--danger); color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;" onclick="removeCustomProcedure(${idx})">حذف</button>
-      </div>
-    `).join('');
+  function toggleActivityType(type) {
+    document.getElementById('box-act-surgery').style.display = (type === 'surgery') ? 'block' : 'none';
+    document.getElementById('box-act-procedure').style.display = (type === 'procedure') ? 'block' : 'none';
+    document.getElementById('box-act-clinic').style.display = (type === 'clinic') ? 'block' : 'none';
+    document.getElementById('box-act-shift').style.display = (type === 'shift') ? 'block' : 'none';
   }
 
   async function loadDoctorsDropdown() {
     try {
-      const { data: docs, error } = await client.from('doctors').select('*').order('id', { ascending: false });
-      if (error) throw error;
+      const { data: docs } = await client.from('doctors').select('*').order('id', { ascending: false });
       doctorsList = docs || [];
 
-      const selectEl = document.getElementById('edit_doctor_select');
-      if (selectEl) {
-        selectEl.innerHTML = '<option value="">-- اضغط هنا لاختيار الطبيب --</option>' + 
-          doctorsList.map(d => `<option value="${d.id}">${d.full_name} (${d.doctor_code})</option>`).join('');
-      }
-    } catch(err) {
-      console.error('Error loading doctors:', err);
-    }
+      const opts = '<option value="">-- اختر الطبيب --</option>' + 
+        doctorsList.map(d => `<option value="${d.id}">${d.full_name} (${d.doctor_code})</option>`).join('');
+
+      if (document.getElementById('edit_doctor_select')) document.getElementById('edit_doctor_select').innerHTML = opts;
+      if (document.getElementById('act_doctor')) document.getElementById('act_doctor').innerHTML = opts;
+      if (document.getElementById('sheet_doctor')) document.getElementById('sheet_doctor').innerHTML = opts;
+      if (document.getElementById('adj_doctor')) document.getElementById('adj_doctor').innerHTML = opts;
+    } catch(err) { console.error(err); }
 
     try {
       const { data: depts } = await client.from('departments').select('*');
-      if (depts && document.getElementById('cd_dept')) {
-        document.getElementById('cd_dept').innerHTML = depts.map(dp => `<option value="${dp.id}">${dp.name}</option>`).join('');
+      departmentsList = depts || [];
+      if (document.getElementById('cd_dept')) {
+        document.getElementById('cd_dept').innerHTML = departmentsList.map(dp => `<option value="${dp.id}">${dp.name}</option>`).join('');
       }
-    } catch(err) {
-      console.error('Error loading departments:', err);
-    }
+    } catch(err) { console.error(err); }
   }
 
-  // دالة الاستدعاء المرنة مع معالجة كافة التنسيقات
-  async function fetchAndPopulateDoctorContract(docId) {
-    const banner = document.getElementById('load-status-banner');
-    if (!docId) {
-      resetContractFormForNewDoctor();
-      banner.style.display = 'none';
+  async function loadDoctorContractRates(docId) {
+    if (!docId) return;
+    activeDoctorContract = doctorsList.find(d => d.id == docId);
+
+    const [surgRes, procRes] = await Promise.all([
+      client.from('doctor_surgery_rates').select('*').eq('doctor_id', docId),
+      client.from('doctor_procedure_rates').select('*').eq('doctor_id', docId)
+    ]);
+
+    activeDoctorSurgeryRates = surgRes.data || [];
+    activeDoctorProcedures = procRes.data || [];
+
+    const procSelect = document.getElementById('act_proc_select');
+    if (activeDoctorProcedures.length > 0) {
+      procSelect.innerHTML = activeDoctorProcedures.map(p => 
+        `<option value="${p.fee_amount}">${p.service_name} (${p.fee_amount} ج.م)</option>`
+      ).join('');
+      document.getElementById('act_proc_fee').value = activeDoctorProcedures[0].fee_amount;
+    } else {
+      procSelect.innerHTML = '<option value="0">لا توجد إجراءات مسجلة بعقد هذا الطبيب</option>';
+      document.getElementById('act_proc_fee').value = 0;
+    }
+
+    if (activeDoctorContract) {
+      document.getElementById('act_clinic_pct_display').value = activeDoctorContract.clinic_share_pct || 50;
+      document.getElementById('act_shift_rate_display').value = activeDoctorContract.base_shift_rate || activeDoctorContract.daily_rate || 0;
+      calculateClinicShare();
+      calculateShiftTotal();
+    }
+    calculateAutoSurgeryFee();
+  }
+
+  function calculateAutoSurgeryFee() {
+    if (!activeDoctorContract) return;
+
+    if (activeDoctorContract.role_in_theatre !== 'SURGEON') {
+      const level = document.getElementById('act_surg_level').value;
+      const isMajorOrAbove = ['MAJOR', 'ADVANCED', 'SPECIAL_NATURE', 'HIGH_SKILL'].includes(level);
+      document.getElementById('act_surg_fee').value = isMajorOrAbove ? 1500 : 800;
       return;
     }
 
+    const level = document.getElementById('act_surg_level').value;
+    const nat = document.getElementById('act_surg_nat').value;
+    const matchedRate = activeDoctorSurgeryRates.find(r => r.operation_level === level && r.nationality_category === nat);
+    document.getElementById('act_surg_fee').value = matchedRate ? matchedRate.fee_amount : 0;
+  }
+
+  function applyProcedureFee(fee) {
+    document.getElementById('act_proc_fee').value = parseFloat(fee) || 0;
+  }
+
+  function calculateClinicShare() {
+    const total = parseFloat(document.getElementById('act_clinic_total').value) || 0;
+    const cons = parseFloat(document.getElementById('act_clinic_consumables').value) || 0;
+    const pct = parseFloat(document.getElementById('act_clinic_pct_display').value) || 50;
+    const isNet = activeDoctorContract && activeDoctorContract.clinic_calculation_type === 'NET_AFTER_CONSUMABLES';
+    const base = isNet ? Math.max(0, total - cons) : total;
+    document.getElementById('act_clinic_share').value = (base * (pct / 100)).toFixed(2);
+  }
+
+  function calculateShiftTotal() {
+    const days = parseFloat(document.getElementById('act_shift_days').value) || 1;
+    const rate = parseFloat(document.getElementById('act_shift_rate_display').value) || 0;
+    document.getElementById('act_shift_total').value = (days * rate).toFixed(2);
+  }
+
+  async function saveAutoDailyMovement(e) {
+    e.preventDefault();
+    const docId = parseInt(document.getElementById('act_doctor').value);
+    const date = document.getElementById('act_date').value;
+    const type = document.getElementById('act_main_type').value;
+    const fileNo = document.getElementById('act_file_no').value || '-';
+    const patientName = document.getElementById('act_patient_name').value || 'مريض';
+    const msg = document.getElementById('auto-act-msg');
+
+    try {
+      if (type === 'surgery') {
+        const sLevel = document.getElementById('act_surg_level').options[document.getElementById('act_surg_level').selectedIndex].text;
+        const sNat = document.getElementById('act_surg_nat').options[document.getElementById('act_surg_nat').selectedIndex].text;
+        const sName = document.getElementById('act_surg_name').value || 'عملية جراحية';
+        const fee = parseFloat(document.getElementById('act_surg_fee').value) || 0;
+
+        await client.from('surgical_procedures').insert([{
+          doctor_id: docId, procedure_date: date, patient_file_number: fileNo, patient_name: patientName,
+          procedure_name: `${sName} [${sLevel} - ${sNat}]`, category_name: 'جراحة', doctor_share_amount: fee
+        }]);
+      } else if (type === 'procedure') {
+        const pSelect = document.getElementById('act_proc_select');
+        const pName = pSelect.options[pSelect.selectedIndex].text;
+        const fee = parseFloat(document.getElementById('act_proc_fee').value) || 0;
+
+        await client.from('surgical_procedures').insert([{
+          doctor_id: docId, procedure_date: date, patient_file_number: fileNo, patient_name: patientName,
+          procedure_name: `إجراء/فحص: ${pName}`, category_name: 'إجراءات وفحوصات', doctor_share_amount: fee
+        }]);
+      } else if (type === 'clinic') {
+        const total = parseFloat(document.getElementById('act_clinic_total').value) || 0;
+        const share = parseFloat(document.getElementById('act_clinic_share').value) || 0;
+
+        await client.from('clinic_visits').insert([{
+          doctor_id: docId, visit_date: date, patient_file_number: fileNo, patient_name: patientName,
+          service_type: 'كشف عيادة خارجية', total_amount: total, doctor_share_amount: share
+        }]);
+      } else if (type === 'shift') {
+        const days = parseFloat(document.getElementById('act_shift_days').value) || 1;
+        const total = parseFloat(document.getElementById('act_shift_total').value) || 0;
+
+        await client.from('doctor_shifts').insert([{
+          doctor_id: docId, shift_date: date, shift_type: 'DAILY', days_count: days, shift_calculated_amount: total
+        }]);
+      }
+
+      msg.innerText = 'تم تسجيل الحركة واحتساب الأتعاب آلياً بناءً على اللائحة التعاقدية!';
+      msg.className = 'status-msg status-success';
+      msg.style.display = 'block';
+    } catch(err) {
+      msg.innerText = 'خطأ: ' + err.message;
+      msg.className = 'status-msg status-error';
+      msg.style.display = 'block';
+    }
+  }
+
+  async function saveAdjustment(e) {
+    e.preventDefault();
+    const docId = parseInt(document.getElementById('adj_doctor').value);
+    const date = document.getElementById('adj_date').value;
+    const type = document.getElementById('adj_type').value;
+    const amount = parseFloat(document.getElementById('adj_amount').value) || 0;
+    const desc = document.getElementById('adj_desc').value;
+    const msg = document.getElementById('adj-msg');
+
+    try {
+      await client.from('doctor_adjustments').insert([{
+        doctor_id: docId, entry_date: date, adjustment_type: type, amount: amount, description: desc
+      }]);
+      msg.innerText = 'تم حفظ قيد التسوية/الاستقطاع بنجاح في حساب الطبيب!';
+      msg.className = 'status-msg status-success';
+      msg.style.display = 'block';
+      document.getElementById('adj_amount').value = '';
+      document.getElementById('adj_desc').value = '';
+    } catch(err) {
+      msg.innerText = 'خطأ: ' + err.message;
+      msg.className = 'status-msg status-error';
+      msg.style.display = 'block';
+    }
+  }
+
+  // توليد وعرض كشف الحساب الفردي والملحق التفصيلي
+  async function generateOfficialStatement() {
+    const docId = document.getElementById('sheet_doctor').value;
+    const fromDate = document.getElementById('sheet_from_date').value;
+    const toDate = document.getElementById('sheet_to_date').value;
+
+    if (!docId) { alert('يرجى اختيار الطبيب!'); return; }
+    const doc = doctorsList.find(d => d.id == docId);
+
+    // استعلام الحركات
+    let qShifts = client.from('doctor_shifts').select('*').eq('doctor_id', docId);
+    let qSurg = client.from('surgical_procedures').select('*').eq('doctor_id', docId);
+    let qClinic = client.from('clinic_visits').select('*').eq('doctor_id', docId);
+    let qAdj = client.from('doctor_adjustments').select('*').eq('doctor_id', docId);
+
+    if (fromDate) {
+      qShifts = qShifts.gte('shift_date', fromDate);
+      qSurg = qSurg.gte('procedure_date', fromDate);
+      qClinic = qClinic.gte('visit_date', fromDate);
+      qAdj = qAdj.gte('entry_date', fromDate);
+    }
+    if (toDate) {
+      qShifts = qShifts.lte('shift_date', toDate);
+      qSurg = qSurg.lte('procedure_date', toDate);
+      qClinic = qClinic.lte('visit_date', toDate);
+      qAdj = qAdj.lte('entry_date', toDate);
+    }
+
+    const [shiftsRes, surgRes, clinicRes, adjRes] = await Promise.all([qShifts, qSurg, qClinic, qAdj]);
+
+    const shifts = shiftsRes.data || [];
+    const surgs = surgRes.data || [];
+    const clinics = clinicRes.data || [];
+    const adjs = adjRes.data || [];
+
+    // تعبئة البيانات الرأسية
+    document.getElementById('out-header-title').innerText = `كشف حساب أتعاب طبيب عن الفترة من (${fromDate || 'البداية'}) إلى (${toDate || 'الآن'})`;
+    document.getElementById('out-doc-name').innerText = doc.full_name;
+    document.getElementById('out-doc-tier').innerText = doc.professional_tier || 'أخصائي';
+    document.getElementById('out-doc-bank').innerText = doc.bank_name || 'نقدي بخزينة المستشفى';
+    const deptObj = departmentsList.find(dp => dp.id == doc.department_id);
+    document.getElementById('out-doc-dept').innerText = deptObj ? deptObj.name : '-';
+
+    // حساب الورديات
+    let totalShiftDays = 0;
+    let totalShiftAmount = 0;
+    shifts.forEach(s => {
+      totalShiftDays += parseFloat(s.days_count || 1);
+      totalShiftAmount += parseFloat(s.shift_calculated_amount || 0);
+    });
+
+    document.getElementById('out-from-day').innerText = fromDate || '-';
+    document.getElementById('out-to-day').innerText = toDate || '-';
+    document.getElementById('out-days-count').innerText = totalShiftDays;
+    document.getElementById('out-day-rate').innerText = (doc.base_shift_rate || doc.daily_rate || 0).toFixed(2);
+    document.getElementById('out-base-total').innerText = totalShiftAmount.toFixed(2);
+
+    // حساب العمليات والعيادات والبدلات والاستقطاعات
+    let totalSurg = 0;
+    surgs.forEach(s => totalSurg += parseFloat(s.doctor_share_amount || 0));
+
+    let totalClinics = 0;
+    clinics.forEach(c => totalClinics += parseFloat(c.doctor_share_amount || 0));
+
+    let totalAllowances = 0;
+    let totalDeductions = 0;
+    adjs.forEach(a => {
+      if (a.adjustment_type === 'ALLOWANCE') totalAllowances += parseFloat(a.amount || 0);
+      else totalDeductions += parseFloat(a.amount || 0);
+    });
+
+    const netTotal = (totalShiftAmount + totalSurg + totalClinics + totalAllowances) - totalDeductions;
+
+    // تعبئة جدول الإيرادات والاستقطاعات
+    const breakdownBody = document.getElementById('out-breakdown-body');
+    breakdownBody.innerHTML = `
+      <tr><td>إجمالي أجر التواجد الأساسي والورديات (العمالة)</td><td style="font-weight:bold;">${totalShiftAmount.toFixed(2)}</td></tr>
+      <tr><td>أتعاب كشوفات العيادات الخارجية المعتمدة</td><td style="font-weight:bold;">${totalClinics.toFixed(2)}</td></tr>
+      <tr><td>بونص العمليات الجراحية والفحوصات والإجراءات</td><td style="font-weight:bold;">${totalSurg.toFixed(2)}</td></tr>
+      ${totalAllowances > 0 ? `<tr><td>بدلات ومكافآت إضافية معتمدة</td><td style="font-weight:bold; color:var(--success);">${totalAllowances.toFixed(2)}</td></tr>` : ''}
+      ${totalDeductions > 0 ? `<tr><td>استقطاعات وسلفيات وتأمينات (تخصم)</td><td style="font-weight:bold; color:var(--danger);">(${totalDeductions.toFixed(2)})</td></tr>` : ''}
+    `;
+    document.getElementById('out-net-total').innerText = netTotal.toFixed(2) + ' ج.م';
+
+    // تعبئة ملحق الحالات التفصيلي
+    document.getElementById('annex-doc-name').innerText = doc.full_name;
+    document.getElementById('annex-period').innerText = `من ${fromDate || 'البداية'} إلى ${toDate || 'الآن'}`;
+
+    const allDetailedCases = [];
+    surgs.forEach(s => {
+      allDetailedCases.push({ date: s.procedure_date, file: s.patient_file_number, patient: s.patient_name, name: s.procedure_name, fee: s.doctor_share_amount });
+    });
+    clinics.forEach(c => {
+      allDetailedCases.push({ date: c.visit_date, file: c.patient_file_number, patient: c.patient_name, name: c.service_type, fee: c.doctor_share_amount });
+    });
+
+    const annexBody = document.getElementById('annex-details-body');
+    if (allDetailedCases.length === 0) {
+      annexBody.innerHTML = '<tr><td colspan="6" style="padding:15px; color:#64748b;">لا توجد حالات طبية أو عمليات مسجلة خلال هذه الفترة</td></tr>';
+    } else {
+      annexBody.innerHTML = allDetailedCases.map((cs, idx) => `
+        <tr>
+          <td>${idx + 1}</td>
+          <td>${cs.date}</td>
+          <td>${cs.file}</td>
+          <td>${cs.patient}</td>
+          <td>${cs.name}</td>
+          <td style="font-weight:bold;">${parseFloat(cs.fee).toFixed(2)}</td>
+        </tr>
+      `).join('');
+    }
+    document.getElementById('annex-total-amount').innerText = (totalSurg + totalClinics).toFixed(2) + ' ج.م';
+
+    document.getElementById('sheet-wrapper').style.display = 'block';
+  }
+
+  // توليد مسير الأتعاب المجمع
+  async function generateManagementSummary() {
+    const fromDate = document.getElementById('sum_from_date').value;
+    const toDate = document.getElementById('sum_to_date').value;
+
+    document.getElementById('sum-header-title').innerText = `مسير أتعاب الأطباء المجمع عن الفترة من (${fromDate || 'البداية'}) إلى (${toDate || 'الآن'})`;
+
+    let qShifts = client.from('doctor_shifts').select('*');
+    let qSurg = client.from('surgical_procedures').select('*');
+    let qClinic = client.from('clinic_visits').select('*');
+    let qAdj = client.from('doctor_adjustments').select('*');
+
+    if (fromDate) {
+      qShifts = qShifts.gte('shift_date', fromDate);
+      qSurg = qSurg.gte('procedure_date', fromDate);
+      qClinic = qClinic.gte('visit_date', fromDate);
+      qAdj = qAdj.gte('entry_date', fromDate);
+    }
+    if (toDate) {
+      qShifts = qShifts.lte('shift_date', toDate);
+      qSurg = qSurg.lte('procedure_date', toDate);
+      qClinic = qClinic.lte('visit_date', toDate);
+      qAdj = qAdj.lte('entry_date', toDate);
+    }
+
+    const [shiftsRes, surgRes, clinicRes, adjRes] = await Promise.all([qShifts, qSurg, qClinic, qAdj]);
+
+    const shifts = shiftsRes.data || [];
+    const surgs = surgRes.data || [];
+    const clinics = clinicRes.data || [];
+    const adjs = adjRes.data || [];
+
+    let gShifts = 0, gClinics = 0, gSurg = 0, gAllow = 0, gDeduct = 0, gNet = 0;
+    latestSummaryData = [];
+
+    const summaryRows = doctorsList.map(doc => {
+      const docShifts = shifts.filter(s => s.doctor_id == doc.id);
+      const docSurg = surgs.filter(s => s.doctor_id == doc.id);
+      const docClinic = clinics.filter(c => c.doctor_id == doc.id);
+      const docAdj = adjs.filter(a => a.doctor_id == doc.id);
+
+      let shiftDays = 0, shiftTotal = 0;
+      docShifts.forEach(s => { shiftDays += parseFloat(s.days_count || 1); shiftTotal += parseFloat(s.shift_calculated_amount || 0); });
+
+      let surgTotal = 0;
+      docSurg.forEach(s => surgTotal += parseFloat(s.doctor_share_amount || 0));
+
+      let clinicTotal = 0;
+      docClinic.forEach(c => clinicTotal += parseFloat(c.doctor_share_amount || 0));
+
+      let allowTotal = 0, deductTotal = 0;
+      docAdj.forEach(a => {
+        if (a.adjustment_type === 'ALLOWANCE') allowTotal += parseFloat(a.amount || 0);
+        else deductTotal += parseFloat(a.amount || 0);
+      });
+
+      const net = (shiftTotal + clinicTotal + surgTotal + allowTotal) - deductTotal;
+
+      if (shiftTotal === 0 && surgTotal === 0 && clinicTotal === 0 && allowTotal === 0 && deductTotal === 0) {
+        return null;
+      }
+
+      gShifts += shiftTotal;
+      gClinics += clinicTotal;
+      gSurg += surgTotal;
+      gAllow += allowTotal;
+      gDeduct += deductTotal;
+      gNet += net;
+
+      const record = {
+        code: doc.doctor_code,
+        name: doc.full_name,
+        tier: doc.professional_tier || 'أخصائي',
+        days: shiftDays,
+        shiftTotal: shiftTotal,
+        clinicTotal: clinicTotal,
+        surgTotal: surgTotal,
+        allowTotal: allowTotal,
+        deductTotal: deductTotal,
+        net: net
+      };
+      latestSummaryData.push(record);
+
+      return `
+        <tr>
+          <td>${doc.doctor_code}</td>
+          <td style="font-weight:bold; text-align:right; padding-right:10px;">${doc.full_name}</td>
+          <td>${doc.professional_tier || 'أخصائي'}</td>
+          <td>${shiftDays}</td>
+          <td>${shiftTotal.toFixed(2)}</td>
+          <td>${clinicTotal.toFixed(2)}</td>
+          <td>${surgTotal.toFixed(2)}</td>
+          <td style="color:var(--success);">${allowTotal.toFixed(2)}</td>
+          <td style="color:var(--danger);">${deductTotal.toFixed(2)}</td>
+          <td style="font-weight:bold; color:var(--primary-dark);">${net.toFixed(2)}</td>
+        </tr>
+      `;
+    }).filter(r => r !== null);
+
+    const tbody = document.getElementById('summary-table-body');
+    if (summaryRows.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="10" style="padding:20px; color:#64748b;">لا توجد حركات مسجلة خلال الفترة المختارة</td></tr>';
+    } else {
+      tbody.innerHTML = summaryRows.join('');
+    }
+
+    document.getElementById('sum-total-shifts').innerText = gShifts.toFixed(2);
+    document.getElementById('sum-total-clinics').innerText = gClinics.toFixed(2);
+    document.getElementById('sum-total-surgeries').innerText = gSurg.toFixed(2);
+    document.getElementById('sum-total-allowances').innerText = gAllow.toFixed(2);
+    document.getElementById('sum-total-deductions').innerText = gDeduct.toFixed(2);
+    document.getElementById('sum-grand-net').innerText = gNet.toFixed(2) + ' ج.م';
+  }
+
+  function exportSummaryToCSV() {
+    if (latestSummaryData.length === 0) {
+      alert('يرجى عرض المسير أولاً لتصدير البيانات!');
+      return;
+    }
+    let csv = '\uFEFFكود الطبيب,اسم الطبيب,الدرجة المهنية,عدد الورديات,أجر التواجد,العيادات الخارجية,العمليات والإجراءات,البدلات,الاستقطاعات,الصافي المستحق\n';
+    latestSummaryData.forEach(r => {
+      csv += `"${r.code}","${r.name}","${r.tier}",${r.days},${r.shiftTotal.toFixed(2)},${r.clinicTotal.toFixed(2)},${r.surgTotal.toFixed(2)},${r.allowTotal.toFixed(2)},${r.deductTotal.toFixed(2)},${r.net.toFixed(2)}\n`;
+    });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute("download", `مسير_أتعاب_الأطباء_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  // دوال الحفظ واسترجاع العقود
+  async function fetchAndPopulateDoctorContract(docId) {
+    const banner = document.getElementById('load-status-banner');
+    if (!docId) { resetContractFormForNewDoctor(); banner.style.display = 'none'; return; }
     const doc = doctorsList.find(d => d.id == docId);
     if (!doc) return;
 
     banner.innerText = `جاري استدعاء بنود التعاقد لـ: ${doc.full_name}...`;
-    banner.style.background = '#fef3c7';
-    banner.style.color = '#92400e';
-    banner.style.display = 'block';
+    banner.style.background = '#fef3c7'; banner.style.color = '#92400e'; banner.style.display = 'block';
 
     document.getElementById('editing_doc_id').value = doc.id;
     document.getElementById('contract-form-title').innerText = `تعديل اللائحة والتعاقد لـ: ${doc.full_name} (${doc.doctor_code})`;
     document.getElementById('btn-save-contract').innerText = `تحديث واعتماد عقد الطبيب: ${doc.full_name}`;
 
-    // تعبئة البيانات الأساسية (مع قراءة الحقول البديلة إن وجدت)
     document.getElementById('cd_code').value = doc.doctor_code || '';
     document.getElementById('cd_name').value = doc.full_name || '';
     if (doc.department_id) document.getElementById('cd_dept').value = doc.department_id;
-    
-    // الدرجة المهنية
     document.getElementById('cd_tier').value = doc.professional_tier || 'SPECIALIST';
     document.getElementById('cd_role').value = doc.role_in_theatre || 'SURGEON';
-    document.getElementById('cd_bank').value = doc.bank_name || doc.bank_account_no || '';
+    document.getElementById('cd_bank').value = doc.bank_name || '';
     adjustTheatreFields(doc.role_in_theatre || 'SURGEON');
 
-    // الوردية والأجر والعيادة
     document.getElementById('cd_shift_basis').value = doc.shift_basis || 'DAILY';
     document.getElementById('cd_base_rate').value = doc.base_shift_rate || doc.daily_rate || 0;
     document.getElementById('cd_clinic_type').value = doc.clinic_calculation_type || 'GROSS';
     document.getElementById('cd_clinic_pct').value = (doc.clinic_share_pct !== undefined && doc.clinic_share_pct !== null) ? doc.clinic_share_pct : 50;
 
-    // استدعاء مصفوفة العمليات
     try {
       const { data: surgRates } = await client.from('doctor_surgery_rates').select('*').eq('doctor_id', docId);
       if (surgRates && surgRates.length > 0) {
@@ -448,10 +1096,7 @@
           'SIMPLE': 'm_simp', 'MINOR': 'm_minor', 'INTERMEDIATE': 'm_inter',
           'MAJOR': 'm_major', 'ADVANCED': 'm_adv', 'SPECIAL_NATURE': 'm_spec', 'HIGH_SKILL': 'm_skill'
         };
-        const mapNatSuffix = {
-          'RESIDENT': 'res', 'EAST_EUROPEAN': 'ee', 'WEST_EUROPEAN': 'we', 'RESIDENT_X2': 'rx2'
-        };
-
+        const mapNatSuffix = { 'RESIDENT': 'res', 'EAST_EUROPEAN': 'ee', 'WEST_EUROPEAN': 'we', 'RESIDENT_X2': 'rx2' };
         surgRates.forEach(r => {
           const lKey = (r.operation_level || '').toUpperCase();
           const nKey = (r.nationality_category || '').toUpperCase();
@@ -463,22 +1108,17 @@
           }
         });
       }
-    } catch(e) { console.error('Error fetching surgery rates:', e); }
+    } catch(e) { console.error(e); }
 
-    // استدعاء الفحوصات والإجراءات
     try {
       const { data: procs } = await client.from('doctor_procedure_rates').select('*').eq('doctor_id', docId);
-      ['proc_xray','proc_us','proc_ct','proc_mri','proc_echo','proc_cast','proc_suture','proc_joint'].forEach(id => {
-        document.getElementById(id).value = 0;
-      });
+      ['proc_xray','proc_us','proc_ct','proc_mri','proc_echo','proc_cast','proc_suture','proc_joint'].forEach(id => document.getElementById(id).value = 0);
       customProceduresList = [];
-
       if (procs && procs.length > 0) {
         const mapStandardProcs = {
           'XRAY': 'proc_xray', 'ULTRASOUND': 'proc_us', 'CT': 'proc_ct', 'MRI': 'proc_mri',
           'ECHO': 'proc_echo', 'CASTING': 'proc_cast', 'SUTURING': 'proc_suture', 'JOINT_INJECTION': 'proc_joint'
         };
-
         procs.forEach(p => {
           const cKey = (p.service_code || '').toUpperCase();
           if (mapStandardProcs[cKey]) {
@@ -489,11 +1129,10 @@
         });
       }
       renderCustomProcedures();
-    } catch(e) { console.error('Error fetching procedures:', e); }
+    } catch(e) { console.error(e); }
 
     banner.innerText = `تم استدعاء وتحميل كامل بنود عقد الطبيب: ${doc.full_name} بنجاح.`;
-    banner.style.background = '#dcfce7';
-    banner.style.color = '#15803d';
+    banner.style.background = '#dcfce7'; banner.style.color = '#15803d';
   }
 
   function resetContractFormForNewDoctor() {
@@ -506,6 +1145,106 @@
     customProceduresList = [];
     renderCustomProcedures();
     adjustTheatreFields('SURGEON');
+  }
+
+  function addCustomProcedureRow() {
+    const nameInput = document.getElementById('new_custom_name');
+    const feeInput = document.getElementById('new_custom_fee');
+    const name = nameInput.value.trim();
+    const fee = parseFloat(feeInput.value);
+    if (!name || isNaN(fee) || fee <= 0) { alert('يرجى إدخال اسم الإجراء والمبلغ المتفق عليه!'); return; }
+    customProceduresList.push({ name: name, fee: fee });
+    renderCustomProcedures();
+    nameInput.value = ''; feeInput.value = '';
+  }
+
+  function removeCustomProcedure(idx) { customProceduresList.splice(idx, 1); renderCustomProcedures(); }
+
+  function renderCustomProcedures() {
+    const container = document.getElementById('custom-procedures-container');
+    if (customProceduresList.length === 0) { container.innerHTML = ''; return; }
+    container.innerHTML = customProceduresList.map((cp, idx) => `
+      <div class="custom-proc-row">
+        <span style="font-weight:bold; flex:2;">إجراء مخصص: ${cp.name}</span>
+        <span style="color:var(--primary-dark); font-weight:bold; flex:1;">${cp.fee.toFixed(2)} ج.م (أجر بالاتفاق)</span>
+        <button type="button" style="background:var(--danger); color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;" onclick="removeCustomProcedure(${idx})">حذف</button>
+      </div>
+    `).join('');
+  }
+
+  async function saveFullContract(e) {
+    e.preventDefault();
+    const msg = document.getElementById('contract-msg');
+    msg.style.display = 'none';
+
+    try {
+      const editDocId = document.getElementById('editing_doc_id').value;
+      const docPayload = {
+        doctor_code: document.getElementById('cd_code').value,
+        full_name: document.getElementById('cd_name').value,
+        department_id: parseInt(document.getElementById('cd_dept').value) || null,
+        professional_tier: document.getElementById('cd_tier').value,
+        role_in_theatre: document.getElementById('cd_role').value,
+        shift_basis: document.getElementById('cd_shift_basis').value,
+        base_shift_rate: parseFloat(document.getElementById('cd_base_rate').value) || 0,
+        clinic_calculation_type: document.getElementById('cd_clinic_type').value,
+        clinic_share_pct: parseFloat(document.getElementById('cd_clinic_pct').value) || 0,
+        bank_name: document.getElementById('cd_bank').value
+      };
+
+      let docId = editDocId ? parseInt(editDocId) : null;
+      if (docId) {
+        await client.from('doctors').update(docPayload).eq('id', docId);
+      } else {
+        const { data: savedDoc, error: docErr } = await client.from('doctors').insert([docPayload]).select();
+        if (docErr) throw docErr;
+        docId = savedDoc[0].id;
+      }
+
+      await client.from('doctor_surgery_rates').delete().eq('doctor_id', docId);
+      await client.from('doctor_procedure_rates').delete().eq('doctor_id', docId);
+
+      if (docPayload.role_in_theatre === 'SURGEON') {
+        const levels = [
+          { level: 'SIMPLE', prefix: 'm_simp' }, { level: 'MINOR', prefix: 'm_minor' }, { level: 'INTERMEDIATE', prefix: 'm_inter' },
+          { level: 'MAJOR', prefix: 'm_major' }, { level: 'ADVANCED', prefix: 'm_adv' }, { level: 'SPECIAL_NATURE', prefix: 'm_spec' }, { level: 'HIGH_SKILL', prefix: 'm_skill' }
+        ];
+        let surgeryRows = [];
+        levels.forEach(lv => {
+          surgeryRows.push(
+            { doctor_id: docId, operation_level: lv.level, nationality_category: 'RESIDENT', fee_amount: parseFloat(document.getElementById(`${lv.prefix}_res`).value) || 0 },
+            { doctor_id: docId, operation_level: lv.level, nationality_category: 'EAST_EUROPEAN', fee_amount: parseFloat(document.getElementById(`${lv.prefix}_ee`).value) || 0 },
+            { doctor_id: docId, operation_level: lv.level, nationality_category: 'WEST_EUROPEAN', fee_amount: parseFloat(document.getElementById(`${lv.prefix}_we`).value) || 0 },
+            { doctor_id: docId, operation_level: lv.level, nationality_category: 'RESIDENT_X2', fee_amount: parseFloat(document.getElementById(`${lv.prefix}_rx2`).value) || 0 }
+          );
+        });
+        await client.from('doctor_surgery_rates').insert(surgeryRows);
+      }
+
+      let procs = [
+        { code: 'XRAY', name: 'أشعة عادية', val: parseFloat(document.getElementById('proc_xray').value) || 0 },
+        { code: 'ULTRASOUND', name: 'سونار', val: parseFloat(document.getElementById('proc_us').value) || 0 },
+        { code: 'CT', name: 'أشعة مقطعية', val: parseFloat(document.getElementById('proc_ct').value) || 0 },
+        { code: 'MRI', name: 'رنين مغناطيسي', val: parseFloat(document.getElementById('proc_mri').value) || 0 },
+        { code: 'ECHO', name: 'إيكو قلب', val: parseFloat(document.getElementById('proc_echo').value) || 0 },
+        { code: 'CASTING', name: 'تجبيس', val: parseFloat(document.getElementById('proc_cast').value) || 0 },
+        { code: 'SUTURING', name: 'غرز جراحية ثانوية', val: parseFloat(document.getElementById('proc_suture').value) || 0 },
+        { code: 'JOINT_INJECTION', name: 'حقن مفاصل', val: parseFloat(document.getElementById('proc_joint').value) || 0 }
+      ].filter(p => p.val > 0).map(p => ({ doctor_id: docId, service_code: p.code, service_name: p.name, fee_amount: p.val, is_custom: false }));
+
+      customProceduresList.forEach((cp, idx) => {
+        procs.push({ doctor_id: docId, service_code: `CUSTOM_${Date.now()}_${idx}`, service_name: cp.name, fee_amount: cp.fee, is_custom: true });
+      });
+
+      if (procs.length > 0) await client.from('doctor_procedure_rates').insert(procs);
+
+      msg.innerText = editDocId ? 'تم تحديث واعتماد عقد ولائحة الطبيب بنجاح!' : 'تم حفظ عقد الطبيب الجديد بنجاح!';
+      msg.className = 'status-msg status-success'; msg.style.display = 'block';
+      await loadDoctorsDropdown();
+      document.getElementById('edit_doctor_select').value = docId;
+    } catch(err) {
+      msg.innerText = 'خطأ: ' + err.message; msg.className = 'status-msg status-error'; msg.style.display = 'block';
+    }
   }
 
   async function loadUsersForLogin() {
@@ -547,106 +1286,16 @@
     document.getElementById(id).classList.add('active');
   }
 
-  async function saveFullContract(e) {
-    e.preventDefault();
-    const msg = document.getElementById('contract-msg');
-    msg.style.display = 'none';
-
-    try {
-      const editDocId = document.getElementById('editing_doc_id').value;
-      const docPayload = {
-        doctor_code: document.getElementById('cd_code').value,
-        full_name: document.getElementById('cd_name').value,
-        department_id: parseInt(document.getElementById('cd_dept').value) || null,
-        professional_tier: document.getElementById('cd_tier').value,
-        role_in_theatre: document.getElementById('cd_role').value,
-        shift_basis: document.getElementById('cd_shift_basis').value,
-        base_shift_rate: parseFloat(document.getElementById('cd_base_rate').value) || 0,
-        clinic_calculation_type: document.getElementById('cd_clinic_type').value,
-        clinic_share_pct: parseFloat(document.getElementById('cd_clinic_pct').value) || 0,
-        bank_name: document.getElementById('cd_bank').value
-      };
-
-      let docId = editDocId ? parseInt(editDocId) : null;
-
-      if (docId) {
-        const { error: updErr } = await client.from('doctors').update(docPayload).eq('id', docId);
-        if (updErr) throw updErr;
-      } else {
-        const { data: savedDoc, error: docErr } = await client.from('doctors').insert([docPayload]).select();
-        if (docErr) throw docErr;
-        docId = savedDoc[0].id;
-      }
-
-      await client.from('doctor_surgery_rates').delete().eq('doctor_id', docId);
-      await client.from('doctor_procedure_rates').delete().eq('doctor_id', docId);
-
-      if (docPayload.role_in_theatre === 'SURGEON') {
-        const levels = [
-          { level: 'SIMPLE', prefix: 'm_simp' },
-          { level: 'MINOR', prefix: 'm_minor' },
-          { level: 'INTERMEDIATE', prefix: 'm_inter' },
-          { level: 'MAJOR', prefix: 'm_major' },
-          { level: 'ADVANCED', prefix: 'm_adv' },
-          { level: 'SPECIAL_NATURE', prefix: 'm_spec' },
-          { level: 'HIGH_SKILL', prefix: 'm_skill' }
-        ];
-
-        let surgeryRows = [];
-        levels.forEach(lv => {
-          surgeryRows.push(
-            { doctor_id: docId, operation_level: lv.level, nationality_category: 'RESIDENT', fee_amount: parseFloat(document.getElementById(`${lv.prefix}_res`).value) || 0 },
-            { doctor_id: docId, operation_level: lv.level, nationality_category: 'EAST_EUROPEAN', fee_amount: parseFloat(document.getElementById(`${lv.prefix}_ee`).value) || 0 },
-            { doctor_id: docId, operation_level: lv.level, nationality_category: 'WEST_EUROPEAN', fee_amount: parseFloat(document.getElementById(`${lv.prefix}_we`).value) || 0 },
-            { doctor_id: docId, operation_level: lv.level, nationality_category: 'RESIDENT_X2', fee_amount: parseFloat(document.getElementById(`${lv.prefix}_rx2`).value) || 0 }
-          );
-        });
-        await client.from('doctor_surgery_rates').insert(surgeryRows);
-      }
-
-      let procs = [
-        { code: 'XRAY', name: 'أشعة عادية', val: parseFloat(document.getElementById('proc_xray').value) || 0 },
-        { code: 'ULTRASOUND', name: 'سونار', val: parseFloat(document.getElementById('proc_us').value) || 0 },
-        { code: 'CT', name: 'أشعة مقطعية', val: parseFloat(document.getElementById('proc_ct').value) || 0 },
-        { code: 'MRI', name: 'رنين مغناطيسي', val: parseFloat(document.getElementById('proc_mri').value) || 0 },
-        { code: 'ECHO', name: 'إيكو قلب', val: parseFloat(document.getElementById('proc_echo').value) || 0 },
-        { code: 'CASTING', name: 'تجبيس', val: parseFloat(document.getElementById('proc_cast').value) || 0 },
-        { code: 'SUTURING', name: 'غرز جراحية ثانوية', val: parseFloat(document.getElementById('proc_suture').value) || 0 },
-        { code: 'JOINT_INJECTION', name: 'حقن مفاصل', val: parseFloat(document.getElementById('proc_joint').value) || 0 }
-      ].filter(p => p.val > 0).map(p => ({
-        doctor_id: docId, service_code: p.code, service_name: p.name, fee_amount: p.val, is_custom: false
-      }));
-
-      customProceduresList.forEach((cp, idx) => {
-        procs.push({
-          doctor_id: docId,
-          service_code: `CUSTOM_${Date.now()}_${idx}`,
-          service_name: cp.name,
-          fee_amount: cp.fee,
-          is_custom: true
-        });
-      });
-
-      if (procs.length > 0) {
-        await client.from('doctor_procedure_rates').insert(procs);
-      }
-
-      msg.innerText = editDocId ? 'تم تحديث واعتماد عقد ولائحة الطبيب بنجاح!' : 'تم حفظ عقد الطبيب الجديد بنجاح!';
-      msg.className = 'status-msg status-success';
-      msg.style.display = 'block';
-
-      await loadDoctorsDropdown();
-      document.getElementById('edit_doctor_select').value = docId;
-    } catch(err) {
-      msg.innerText = 'خطأ: ' + err.message;
-      msg.className = 'status-msg status-error';
-      msg.style.display = 'block';
-    }
-  }
-
   window.onload = function() {
     loadUsersForLogin();
     loadDoctorsDropdown();
+    const today = new Date().toISOString().split('T')[0];
+    if (document.getElementById('act_date')) document.getElementById('act_date').value = today;
+    if (document.getElementById('adj_date')) document.getElementById('adj_date').value = today;
+    if (document.getElementById('sheet_from_date')) document.getElementById('sheet_from_date').value = today.slice(0, 8) + '01';
+    if (document.getElementById('sheet_to_date')) document.getElementById('sheet_to_date').value = today;
+    if (document.getElementById('sum_from_date')) document.getElementById('sum_from_date').value = today.slice(0, 8) + '01';
+    if (document.getElementById('sum_to_date')) document.getElementById('sum_to_date').value = today;
   };
 </script>
 </body>
