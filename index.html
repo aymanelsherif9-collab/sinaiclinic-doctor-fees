@@ -23,7 +23,7 @@
       margin: 0;
       padding: 15px;
     }
-    .container { max-width: 1250px; margin: 0 auto; }
+    .container { max-width: 1280px; margin: 0 auto; }
     header {
       background: var(--card-bg);
       padding: 15px 20px;
@@ -137,7 +137,7 @@
       margin-right: 5px;
     }
 
-    /* تنسيقات الطباعة والشيت الرسمي المعتمد */
+    /* كشوفات الطباعة والشيت الرسمي */
     .official-sheet {
       border: 2px solid #0f172a;
       padding: 25px;
@@ -359,9 +359,9 @@
     </form>
   </div>
 
-  <!-- 2. تبويب تسجيل الحركات اليومية المربوط آلياً بالعقد -->
+  <!-- 2. تبويب تسجيل الحركات اليومية -->
   <div id="tab-daily" class="card">
-    <h3>تسجيل الحركات اليومية والأتعاب الآلية</h3>
+    <h3 style="margin-top:0;">تسجيل الحركات اليومية والأتعاب الآلية</h3>
     <form id="form-daily-auto" onsubmit="saveAutoDailyMovement(event)">
       <div class="section-box">
         <h4 class="section-title">بيانات الحالة والجهة</h4>
@@ -372,7 +372,7 @@
           </div>
           <div class="form-group"><label>التاريخ:</label><input type="date" id="act_date" required></div>
           <div class="form-group">
-            <label>نوع الحركة:</label>
+            <label>نوع الحركة / النشاط:</label>
             <select id="act_main_type" onchange="toggleActivityType(this.value)">
               <option value="surgery">عملية جراحية (7 مستويات)</option>
               <option value="procedure">فحوصات / أشعة / إجراءات عيادات وبالاتفاق</option>
@@ -461,7 +461,7 @@
 
   <!-- 3. تبويب إدخال الاستقطاعات والبدلات -->
   <div id="tab-adjustments" class="card">
-    <h3>إدخال الاستقطاعات والتسويات والبدلات</h3>
+    <h3 style="margin-top:0;">إدخال الاستقطاعات والتسويات والبدلات</h3>
     <form id="form-adj" onsubmit="saveAdjustment(event)">
       <div class="grid">
         <div class="form-group"><label>اختر الطبيب:</label><select id="adj_doctor" required></select></div>
@@ -481,7 +481,7 @@
     </form>
   </div>
 
-  <!-- 4. تبويب كشف الحساب والتقرير الفردي والملحق التفصيلي للطباعة -->
+  <!-- 4. تبويب كشف الحساب والتقرير الفردي والملحق التفصيلي -->
   <div id="tab-sheet" class="card">
     <div class="no-print" style="display:flex; gap:10px; align-items:flex-end; margin-bottom:15px; background:#f1f5f9; padding:15px; border-radius:8px; flex-wrap:wrap;">
       <div class="form-group"><label>الطبيب المعالج:</label><select id="sheet_doctor" style="min-width:240px; font-weight:bold;"></select></div>
@@ -492,7 +492,7 @@
     </div>
 
     <div id="sheet-wrapper" style="display:none;">
-      <!-- كشف الحساب الإجمالي والرسمي -->
+      <!-- كشف الحساب المعتمد -->
       <div class="official-sheet">
         <div class="sheet-title" id="out-header-title">كشف حساب أتعاب طبيب عن الفترة</div>
         <div class="sheet-meta">
@@ -501,7 +501,7 @@
           <div>الحساب البنكي: <span id="out-doc-bank">-</span></div>
         </div>
 
-        <!-- جدول الورديات -->
+        <!-- جدول التواجد والورديات -->
         <table class="official-table">
           <thead><tr><th>من تاريخ</th><th>إلى تاريخ</th><th>عدد أيام/ورديات التواجد</th><th>أجر الوردية المتفق عليه</th><th>إجمالي التواجد الأساسي (ج.م)</th></tr></thead>
           <tbody>
@@ -512,7 +512,7 @@
           </tbody>
         </table>
 
-        <!-- جدول ملخص الأتعاب والاستقطاعات -->
+        <!-- جدول ملخص الإيرادات والاستقطاعات -->
         <div style="font-weight:bold; margin-bottom:8px;">ملخص الإيرادات والاستقطاعات المعتمدة:</div>
         <table class="official-table">
           <thead><tr><th style="width:70%;">البيـــــــــــــــــــــــــــــــــان</th><th style="width:30%;">الإجمالـــــــي (ج.م)</th></tr></thead>
@@ -814,7 +814,6 @@
     }
   }
 
-  // توليد وعرض كشف الحساب الفردي والملحق التفصيلي
   async function generateOfficialStatement() {
     const docId = document.getElementById('sheet_doctor').value;
     const fromDate = document.getElementById('sheet_from_date').value;
@@ -823,7 +822,6 @@
     if (!docId) { alert('يرجى اختيار الطبيب!'); return; }
     const doc = doctorsList.find(d => d.id == docId);
 
-    // استعلام الحركات
     let qShifts = client.from('doctor_shifts').select('*').eq('doctor_id', docId);
     let qSurg = client.from('surgical_procedures').select('*').eq('doctor_id', docId);
     let qClinic = client.from('clinic_visits').select('*').eq('doctor_id', docId);
@@ -849,7 +847,6 @@
     const clinics = clinicRes.data || [];
     const adjs = adjRes.data || [];
 
-    // تعبئة البيانات الرأسية
     document.getElementById('out-header-title').innerText = `كشف حساب أتعاب طبيب عن الفترة من (${fromDate || 'البداية'}) إلى (${toDate || 'الآن'})`;
     document.getElementById('out-doc-name').innerText = doc.full_name;
     document.getElementById('out-doc-tier').innerText = doc.professional_tier || 'أخصائي';
@@ -857,7 +854,6 @@
     const deptObj = departmentsList.find(dp => dp.id == doc.department_id);
     document.getElementById('out-doc-dept').innerText = deptObj ? deptObj.name : '-';
 
-    // حساب الورديات
     let totalShiftDays = 0;
     let totalShiftAmount = 0;
     shifts.forEach(s => {
@@ -871,7 +867,6 @@
     document.getElementById('out-day-rate').innerText = (doc.base_shift_rate || doc.daily_rate || 0).toFixed(2);
     document.getElementById('out-base-total').innerText = totalShiftAmount.toFixed(2);
 
-    // حساب العمليات والعيادات والبدلات والاستقطاعات
     let totalSurg = 0;
     surgs.forEach(s => totalSurg += parseFloat(s.doctor_share_amount || 0));
 
@@ -887,7 +882,6 @@
 
     const netTotal = (totalShiftAmount + totalSurg + totalClinics + totalAllowances) - totalDeductions;
 
-    // تعبئة جدول الإيرادات والاستقطاعات
     const breakdownBody = document.getElementById('out-breakdown-body');
     breakdownBody.innerHTML = `
       <tr><td>إجمالي أجر التواجد الأساسي والورديات (العمالة)</td><td style="font-weight:bold;">${totalShiftAmount.toFixed(2)}</td></tr>
@@ -898,7 +892,6 @@
     `;
     document.getElementById('out-net-total').innerText = netTotal.toFixed(2) + ' ج.م';
 
-    // تعبئة ملحق الحالات التفصيلي
     document.getElementById('annex-doc-name').innerText = doc.full_name;
     document.getElementById('annex-period').innerText = `من ${fromDate || 'البداية'} إلى ${toDate || 'الآن'}`;
 
@@ -930,7 +923,6 @@
     document.getElementById('sheet-wrapper').style.display = 'block';
   }
 
-  // توليد مسير الأتعاب المجمع
   async function generateManagementSummary() {
     const fromDate = document.getElementById('sum_from_date').value;
     const toDate = document.getElementById('sum_to_date').value;
@@ -1062,7 +1054,6 @@
     document.body.removeChild(link);
   }
 
-  // دوال الحفظ واسترجاع العقود
   async function fetchAndPopulateDoctorContract(docId) {
     const banner = document.getElementById('load-status-banner');
     if (!docId) { resetContractFormForNewDoctor(); banner.style.display = 'none'; return; }
