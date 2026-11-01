@@ -137,7 +137,6 @@
       margin-right: 5px;
     }
 
-    /* كشوفات الطباعة والشيت الرسمي */
     .official-sheet {
       border: 2px solid #0f172a;
       padding: 25px;
@@ -220,7 +219,7 @@
     <button class="tab-btn" id="btn-tab-summary" onclick="switchTab('tab-summary')">مسير الأتعاب المجمع (الإدارة المالية)</button>
   </div>
 
-  <!-- 1. تبويب إعداد ملف الطبيب والعقد الشامل -->
+  <!-- 1. إعداد ملف الطبيب والعقد الشامل -->
   <div id="tab-contract" class="card active">
     <div style="background:#e0f2fe; border:2px solid #0284c7; padding:12px 15px; border-radius:8px; margin-bottom:15px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
       <div style="display:flex; align-items:center; gap:10px; flex:1; min-width:280px;">
@@ -359,7 +358,7 @@
     </form>
   </div>
 
-  <!-- 2. تبويب تسجيل الحركات اليومية -->
+  <!-- 2. تسجيل الحركات اليومية والأتعاب الآلية -->
   <div id="tab-daily" class="card">
     <h3 style="margin-top:0;">تسجيل الحركات اليومية والأتعاب الآلية</h3>
     <form id="form-daily-auto" onsubmit="saveAutoDailyMovement(event)">
@@ -385,7 +384,6 @@
         </div>
       </div>
 
-      <!-- نموذج الجراحة -->
       <div class="section-box" id="box-act-surgery">
         <h4 class="section-title">تفاصيل العملية واحتساب البونص</h4>
         <div class="grid">
@@ -418,7 +416,6 @@
         </div>
       </div>
 
-      <!-- نموذج الفحوصات والإجراءات -->
       <div class="section-box" id="box-act-procedure" style="display:none;">
         <h4 class="section-title">الفحوصات وإجراءات العيادات المعتمدة في عقد الطبيب</h4>
         <div class="grid">
@@ -433,7 +430,6 @@
         </div>
       </div>
 
-      <!-- نموذج العيادة -->
       <div class="section-box" id="box-act-clinic" style="display:none;">
         <h4 class="section-title">حساب كشف العيادة الخارجية</h4>
         <div class="grid">
@@ -444,7 +440,6 @@
         </div>
       </div>
 
-      <!-- نموذج الوردية -->
       <div class="section-box" id="box-act-shift" style="display:none;">
         <h4 class="section-title">تسجيل وردية تواجد (العمالة)</h4>
         <div class="grid">
@@ -459,7 +454,7 @@
     </form>
   </div>
 
-  <!-- 3. تبويب إدخال الاستقطاعات والبدلات -->
+  <!-- 3. إدخال الاستقطاعات والبدلات -->
   <div id="tab-adjustments" class="card">
     <h3 style="margin-top:0;">إدخال الاستقطاعات والتسويات والبدلات</h3>
     <form id="form-adj" onsubmit="saveAdjustment(event)">
@@ -481,7 +476,7 @@
     </form>
   </div>
 
-  <!-- 4. تبويب كشف الحساب والتقرير الفردي والملحق التفصيلي -->
+  <!-- 4. كشف الحساب والتقرير الفردي والملحق التفصيلي -->
   <div id="tab-sheet" class="card">
     <div class="no-print" style="display:flex; gap:10px; align-items:flex-end; margin-bottom:15px; background:#f1f5f9; padding:15px; border-radius:8px; flex-wrap:wrap;">
       <div class="form-group"><label>الطبيب المعالج:</label><select id="sheet_doctor" style="min-width:240px; font-weight:bold;"></select></div>
@@ -492,7 +487,6 @@
     </div>
 
     <div id="sheet-wrapper" style="display:none;">
-      <!-- كشف الحساب المعتمد -->
       <div class="official-sheet">
         <div class="sheet-title" id="out-header-title">كشف حساب أتعاب طبيب عن الفترة</div>
         <div class="sheet-meta">
@@ -501,7 +495,6 @@
           <div>الحساب البنكي: <span id="out-doc-bank">-</span></div>
         </div>
 
-        <!-- جدول التواجد والورديات -->
         <table class="official-table">
           <thead><tr><th>من تاريخ</th><th>إلى تاريخ</th><th>عدد أيام/ورديات التواجد</th><th>أجر الوردية المتفق عليه</th><th>إجمالي التواجد الأساسي (ج.م)</th></tr></thead>
           <tbody>
@@ -512,7 +505,6 @@
           </tbody>
         </table>
 
-        <!-- جدول ملخص الإيرادات والاستقطاعات -->
         <div style="font-weight:bold; margin-bottom:8px;">ملخص الإيرادات والاستقطاعات المعتمدة:</div>
         <table class="official-table">
           <thead><tr><th style="width:70%;">البيـــــــــــــــــــــــــــــــــان</th><th style="width:30%;">الإجمالـــــــي (ج.م)</th></tr></thead>
@@ -525,7 +517,6 @@
           </tfoot>
         </table>
 
-        <!-- التوقيعات الخمسة المعتمدة -->
         <div class="signatures-grid">
           <div class="signature-slot">المحاسب المختص<br><br>.....................</div>
           <div class="signature-slot">رئيس قسم الحسابات<br><br>.....................</div>
@@ -535,7 +526,6 @@
         </div>
       </div>
 
-      <!-- ملحق الحالات التفصيلي للعمليات والعيادات والإجراءات (صفحة مستقلة للطباعة) -->
       <div class="official-sheet page-break" style="margin-top:30px;">
         <div class="sheet-title">ملحق تفصيلي بالحالات الطبية والإجراءات المنفذة للطبيب</div>
         <div class="sheet-meta">
@@ -565,7 +555,7 @@
     </div>
   </div>
 
-  <!-- 5. تبويب مسير الأتعاب المجمع (الإدارة المالية) -->
+  <!-- 5. مسير الأتعاب المجمع -->
   <div id="tab-summary" class="card">
     <div class="no-print" style="display:flex; gap:10px; align-items:flex-end; margin-bottom:15px; background:#f1f5f9; padding:15px; border-radius:8px; flex-wrap:wrap;">
       <div class="form-group"><label>من تاريخ:</label><input type="date" id="sum_from_date"></div>
