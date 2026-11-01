@@ -126,6 +126,17 @@
       display: flex; gap: 10px; align-items: center; margin-bottom: 8px;
       background: #f1f5f9; padding: 8px; border-radius: 6px;
     }
+
+    .auto-badge {
+      display: inline-block;
+      background: #e0f2fe;
+      color: #0369a1;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      margin-right: 5px;
+    }
   </style>
 </head>
 <body>
@@ -162,34 +173,158 @@
   </header>
 
   <div class="tabs no-print">
-    <button class="tab-btn active" id="btn-tab-contract" onclick="switchTab('tab-contract')">إعداد ملف الطبيب والعقد الشامل</button>
+    <button class="tab-btn active" id="btn-tab-daily" onclick="switchTab('tab-daily')">تسجيل الحركات اليومية</button>
+    <button class="tab-btn" id="btn-tab-contract" onclick="switchTab('tab-contract')">إعداد ملف الطبيب والعقد الشامل</button>
     <button class="tab-btn" id="btn-tab-sheet" onclick="switchTab('tab-sheet')">كشف الحساب والتقرير الفردي</button>
     <button class="tab-btn" id="btn-tab-summary" onclick="switchTab('tab-summary')">مسير الأتعاب المجمع (الإدارة المالية)</button>
-    <button class="tab-btn" id="btn-tab-daily" onclick="switchTab('tab-daily')">تسجيل الحركات اليومية</button>
     <button class="tab-btn" id="btn-tab-adjustments" onclick="switchTab('tab-adjustments')">إدخال استقطاعات وبدلات</button>
   </div>
 
+  <!-- تبويب تسجيل الحركات اليومية المربوط آلياً بالعقود -->
+  <div id="tab-daily" class="card active">
+    <h3>تسجيل الحركات اليومية والأتعاب الآلية</h3>
+    <p style="color:#64748b; margin-top:0;">يتم احتساب أتعاب الطبيب آلياً بناءً على لائحة تعاقده المسجلة في السحابة.</p>
+
+    <form id="form-daily-auto" onsubmit="saveAutoDailyMovement(event)">
+      <div class="section-box">
+        <h4 class="section-title">بيانات الحالة والجهة</h4>
+        <div class="grid">
+          <div class="form-group">
+            <label>اختر الطبيب المعالج:</label>
+            <select id="act_doctor" style="border:2px solid var(--primary); font-weight:bold;" onchange="loadDoctorContractRates(this.value)" required></select>
+          </div>
+          <div class="form-group">
+            <label>التاريخ:</label>
+            <input type="date" id="act_date" required>
+          </div>
+          <div class="form-group">
+            <label>نوع الحركة / النشاط:</label>
+            <select id="act_main_type" onchange="toggleActivityType(this.value)">
+              <option value="surgery">عملية جراحية (7 مستويات)</option>
+              <option value="procedure">فحوصات / أشعة / إجراءات عيادات وبالاتفاق</option>
+              <option value="clinic">كشف عيادة خارجية</option>
+              <option value="shift">وردية تواجد / عمالة</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>رقم الملف / الحالة:</label>
+            <input type="text" id="act_file_no" placeholder="مثال: 10425">
+          </div>
+          <div class="form-group">
+            <label>اسم المريض:</label>
+            <input type="text" id="act_patient_name" placeholder="اسم المريض بالكامل">
+          </div>
+        </div>
+      </div>
+
+      <!-- 1. نموذج العمليات الجراحية -->
+      <div class="section-box" id="box-act-surgery">
+        <h4 class="section-title">تفاصيل العملية الجراحية واحتساب البونص</h4>
+        <div class="grid">
+          <div class="form-group">
+            <label>مستوى العملية الجراحية:</label>
+            <select id="act_surg_level" onchange="calculateAutoSurgeryFee()">
+              <option value="SIMPLE">عمليات بسيطة</option>
+              <option value="MINOR">عمليات صغرى</option>
+              <option value="INTERMEDIATE">عمليات متوسطة</option>
+              <option value="MAJOR">عمليات كبرى</option>
+              <option value="ADVANCED">عمليات متقدمة</option>
+              <option value="SPECIAL_NATURE">ذات طابع خاص</option>
+              <option value="HIGH_SKILL">مهارة خاصة</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>فئة جنسية المريض:</label>
+            <select id="act_surg_nat" onchange="calculateAutoSurgeryFee()">
+              <option value="RESIDENT">مقيم / مصري</option>
+              <option value="EAST_EUROPEAN">أوروبي شرقي</option>
+              <option value="WEST_EUROPEAN">أوروبي غربي</option>
+              <option value="RESIDENT_X2">مقيم فئة مضاعفة (×2)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>اسم الإجراء الجراحي:</label>
+            <input type="text" id="act_surg_name" placeholder="مثال: استئصال مرارة بالمنظار">
+          </div>
+          <div class="form-group">
+            <label>أتعاب الطبيب المستحقة <span class="auto-badge">محسوبة آلياً</span>:</label>
+            <input type="number" step="0.01" id="act_surg_fee" style="font-weight:bold; color:var(--primary-dark); background:#f1f5f9;" required>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. نموذج الفحوصات وإجراءات العيادات والاتفاق -->
+      <div class="section-box" id="box-act-procedure" style="display:none;">
+        <h4 class="section-title">الفحوصات وإجراءات العيادات المعتمدة في عقد الطبيب</h4>
+        <div class="grid">
+          <div class="form-group" style="grid-column: span 2;">
+            <label>اختر الخدمة أو الإجراء الاتفاقي المسجل للطبيب:</label>
+            <select id="act_proc_select" onchange="applyProcedureFee(this.value)" style="font-weight:bold;"></select>
+          </div>
+          <div class="form-group">
+            <label>أتعاب الإجراء <span class="auto-badge">محسوبة آلياً</span>:</label>
+            <input type="number" step="0.01" id="act_proc_fee" style="font-weight:bold; color:var(--primary-dark); background:#f1f5f9;" required>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. نموذج العيادات الخارجية -->
+      <div class="section-box" id="box-act-clinic" style="display:none;">
+        <h4 class="section-title">حساب كشف العيادة الخارجية</h4>
+        <div class="grid">
+          <div class="form-group">
+            <label>قيمة تذكرة الكشف (ج.م):</label>
+            <input type="number" id="act_clinic_total" value="300" oninput="calculateClinicShare()">
+          </div>
+          <div class="form-group">
+            <label>تكلفة المستهلكات والخامات (إن وجدت):</label>
+            <input type="number" id="act_clinic_consumables" value="0" oninput="calculateClinicShare()">
+          </div>
+          <div class="form-group">
+            <label>نسبة الطبيب المعتمدة في العقد (%):</label>
+            <input type="number" id="act_clinic_pct_display" readonly style="background:#f1f5f9;">
+          </div>
+          <div class="form-group">
+            <label>حصة الطبيب المستحقة <span class="auto-badge">محسوبة آلياً</span>:</label>
+            <input type="number" step="0.01" id="act_clinic_share" style="font-weight:bold; color:var(--primary-dark); background:#f1f5f9;" required>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. نموذج الورديات والتواجد -->
+      <div class="section-box" id="box-act-shift" style="display:none;">
+        <h4 class="section-title">تسجيل وردية تواجد (العمالة)</h4>
+        <div class="grid">
+          <div class="form-group">
+            <label>عدد أيام / شفتات التواجد:</label>
+            <input type="number" step="0.5" id="act_shift_days" value="1" oninput="calculateShiftTotal()">
+          </div>
+          <div class="form-group">
+            <label>أجر الوردية المعتمد بالعقد (ج.م):</label>
+            <input type="number" id="act_shift_rate_display" readonly style="background:#f1f5f9;">
+          </div>
+          <div class="form-group">
+            <label>إجمالي أجر التواجد <span class="auto-badge">محسوب آلياً</span>:</label>
+            <input type="number" step="0.01" id="act_shift_total" style="font-weight:bold; color:var(--primary-dark); background:#f1f5f9;" required>
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="submit-btn" style="width:100%; font-size:1.05rem; background:var(--success);">تسجيل الحركة وتثبيت الأتعاب آلياً</button>
+      <div id="auto-act-msg" class="status-msg"></div>
+    </form>
+  </div>
+
   <!-- تبويب إعداد ملف الطبيب والعقد الشامل -->
-  <div id="tab-contract" class="card active">
+  <div id="tab-contract" class="card">
     <h3>إعداد اللائحة المالية وتعاقد الطبيب</h3>
     <form id="form-full-contract" onsubmit="saveFullContract(event)">
-      
-      <!-- 1. البيانات العامة والدرجة -->
       <div class="section-box">
         <h4 class="section-title">1. البيانات الوظيفية والدرجة المهنية</h4>
         <div class="grid">
-          <div class="form-group">
-            <label>كود الطبيب:</label>
-            <input type="text" id="cd_code" placeholder="DOC-108" required>
-          </div>
-          <div class="form-group">
-            <label>الاسم الكامل:</label>
-            <input type="text" id="cd_name" placeholder="اسم الطبيب كاملاً" required>
-          </div>
-          <div class="form-group">
-            <label>القسم الطبي:</label>
-            <select id="cd_dept" required></select>
-          </div>
+          <div class="form-group"><label>كود الطبيب:</label><input type="text" id="cd_code" placeholder="DOC-108" required></div>
+          <div class="form-group"><label>الاسم الكامل:</label><input type="text" id="cd_name" placeholder="اسم الطبيب كاملاً" required></div>
+          <div class="form-group"><label>القسم الطبي:</label><select id="cd_dept" required></select></div>
           <div class="form-group">
             <label>الدرجة المهنية:</label>
             <select id="cd_tier">
@@ -207,14 +342,10 @@
               <option value="ASSISTANT">مساعد جراحي</option>
             </select>
           </div>
-          <div class="form-group">
-            <label>الحساب البنكي للصرف:</label>
-            <input type="text" id="cd_bank" placeholder="اسم البنك ورقم الحساب / IBAN">
-          </div>
+          <div class="form-group"><label>الحساب البنكي للصرف:</label><input type="text" id="cd_bank" placeholder="اسم البنك ورقم الحساب / IBAN"></div>
         </div>
       </div>
 
-      <!-- 2. الأجر الأساسي والورديات -->
       <div class="section-box">
         <h4 class="section-title">2. الأجر الأساسي ونظام الوردية (العمالة)</h4>
         <div class="grid">
@@ -226,10 +357,7 @@
               <option value="SHIFT_24">أجر وردية 24 ساعة</option>
             </select>
           </div>
-          <div class="form-group">
-            <label>قيمة الأجر الأساسي للوردية/اليوم (ج.م):</label>
-            <input type="number" step="0.01" id="cd_base_rate" value="1500" required>
-          </div>
+          <div class="form-group"><label>قيمة الأجر الأساسي للوردية/اليوم (ج.م):</label><input type="number" step="0.01" id="cd_base_rate" value="1500" required></div>
           <div class="form-group">
             <label>نظام أتعاب العيادة الخارجية:</label>
             <select id="cd_clinic_type">
@@ -237,14 +365,10 @@
               <option value="NET_AFTER_CONSUMABLES">نسبة بعد خصم تكلفة المستهلكات</option>
             </select>
           </div>
-          <div class="form-group">
-            <label>نسبة الطبيب من العيادة (%):</label>
-            <input type="number" id="cd_clinic_pct" value="50">
-          </div>
+          <div class="form-group"><label>نسبة الطبيب من العيادة (%):</label><input type="number" id="cd_clinic_pct" value="50"></div>
         </div>
       </div>
 
-      <!-- 3. لائحة بونص العمليات الجراحية المحدثة (7 مستويات) -->
       <div class="section-box" id="sec-theatre">
         <h4 class="section-title" id="theatre-title">3. مصفوفة بونص وأتعاب العمليات الجراحية (7 مستويات قياسية)</h4>
         <div id="surgeon-matrix-box">
@@ -260,55 +384,13 @@
               </tr>
             </thead>
             <tbody id="matrix-body">
-              <tr>
-                <td><strong>عمليات بسيطة</strong></td>
-                <td><input type="number" id="m_simp_res" value="200"></td>
-                <td><input type="number" id="m_simp_ee" value="300"></td>
-                <td><input type="number" id="m_simp_we" value="400"></td>
-                <td><input type="number" id="m_simp_rx2" value="400"></td>
-              </tr>
-              <tr>
-                <td><strong>عمليات صغرى</strong></td>
-                <td><input type="number" id="m_minor_res" value="400"></td>
-                <td><input type="number" id="m_minor_ee" value="600"></td>
-                <td><input type="number" id="m_minor_we" value="800"></td>
-                <td><input type="number" id="m_minor_rx2" value="800"></td>
-              </tr>
-              <tr>
-                <td><strong>عمليات متوسطة</strong></td>
-                <td><input type="number" id="m_inter_res" value="1200"></td>
-                <td><input type="number" id="m_inter_ee" value="1800"></td>
-                <td><input type="number" id="m_inter_we" value="2400"></td>
-                <td><input type="number" id="m_inter_rx2" value="2400"></td>
-              </tr>
-              <tr>
-                <td><strong>عمليات كبرى</strong></td>
-                <td><input type="number" id="m_major_res" value="2500"></td>
-                <td><input type="number" id="m_major_ee" value="3500"></td>
-                <td><input type="number" id="m_major_we" value="4500"></td>
-                <td><input type="number" id="m_major_rx2" value="5000"></td>
-              </tr>
-              <tr>
-                <td><strong>عمليات متقدمة</strong></td>
-                <td><input type="number" id="m_adv_res" value="4000"></td>
-                <td><input type="number" id="m_adv_ee" value="5500"></td>
-                <td><input type="number" id="m_adv_we" value="7000"></td>
-                <td><input type="number" id="m_adv_rx2" value="8000"></td>
-              </tr>
-              <tr>
-                <td><strong>ذات طابع خاص</strong></td>
-                <td><input type="number" id="m_spec_res" value="5500"></td>
-                <td><input type="number" id="m_spec_ee" value="7500"></td>
-                <td><input type="number" id="m_spec_we" value="9500"></td>
-                <td><input type="number" id="m_spec_rx2" value="11000"></td>
-              </tr>
-              <tr>
-                <td><strong>مهارة خاصة</strong></td>
-                <td><input type="number" id="m_skill_res" value="7500"></td>
-                <td><input type="number" id="m_skill_ee" value="10500"></td>
-                <td><input type="number" id="m_skill_we" value="14000"></td>
-                <td><input type="number" id="m_skill_rx2" value="15000"></td>
-              </tr>
+              <tr><td>عمليات بسيطة</td><td><input type="number" id="m_simp_res" value="200"></td><td><input type="number" id="m_simp_ee" value="300"></td><td><input type="number" id="m_simp_we" value="400"></td><td><input type="number" id="m_simp_rx2" value="400"></td></tr>
+              <tr><td>عمليات صغرى</td><td><input type="number" id="m_minor_res" value="400"></td><td><input type="number" id="m_minor_ee" value="600"></td><td><input type="number" id="m_minor_we" value="800"></td><td><input type="number" id="m_minor_rx2" value="800"></td></tr>
+              <tr><td>عمليات متوسطة</td><td><input type="number" id="m_inter_res" value="1200"></td><td><input type="number" id="m_inter_ee" value="1800"></td><td><input type="number" id="m_inter_we" value="2400"></td><td><input type="number" id="m_inter_rx2" value="2400"></td></tr>
+              <tr><td>عمليات كبرى</td><td><input type="number" id="m_major_res" value="2500"></td><td><input type="number" id="m_major_ee" value="3500"></td><td><input type="number" id="m_major_we" value="4500"></td><td><input type="number" id="m_major_rx2" value="5000"></td></tr>
+              <tr><td>عمليات متقدمة</td><td><input type="number" id="m_adv_res" value="4000"></td><td><input type="number" id="m_adv_ee" value="5500"></td><td><input type="number" id="m_adv_we" value="7000"></td><td><input type="number" id="m_adv_rx2" value="8000"></td></tr>
+              <tr><td>ذات طابع خاص</td><td><input type="number" id="m_spec_res" value="5500"></td><td><input type="number" id="m_spec_ee" value="7500"></td><td><input type="number" id="m_spec_we" value="9500"></td><td><input type="number" id="m_spec_rx2" value="11000"></td></tr>
+              <tr><td>مهارة خاصة</td><td><input type="number" id="m_skill_res" value="7500"></td><td><input type="number" id="m_skill_ee" value="10500"></td><td><input type="number" id="m_skill_we" value="14000"></td><td><input type="number" id="m_skill_rx2" value="15000"></td></tr>
             </tbody>
           </table>
         </div>
@@ -316,19 +398,12 @@
         <div id="flat-anesthesia-box" style="display:none;">
           <p style="font-size:0.85rem; color:#64748b;">أجر مقطوع ومتفق عليه مع المستشفى لحالات التخدير أو المساعدة:</p>
           <div class="grid">
-            <div class="form-group">
-              <label>أجر الحالة البسيطة / الصغرى / المتوسطة (ج.م):</label>
-              <input type="number" id="flat_anes_standard" value="800">
-            </div>
-            <div class="form-group">
-              <label>أجر الحالة الكبرى / المتقدمة / الخاصة (ج.م):</label>
-              <input type="number" id="flat_anes_major" value="1500">
-            </div>
+            <div class="form-group"><label>أجر الحالة البسيطة / الصغرى / المتوسطة (ج.م):</label><input type="number" id="flat_anes_standard" value="800"></div>
+            <div class="form-group"><label>أجر الحالة الكبرى / المتقدمة / الخاصة (ج.م):</label><input type="number" id="flat_anes_major" value="1500"></div>
           </div>
         </div>
       </div>
 
-      <!-- 4. لائحة بونص الفحوصات والعيادات والإجراءات الجديدة بالاتفاق -->
       <div class="section-box">
         <h4 class="section-title">4. بونص تقارير الأشعة والقلب وإجراءات العيادات</h4>
         <div class="grid">
@@ -342,12 +417,11 @@
           <div class="form-group"><label>حقن مفاصل:</label><input type="number" id="proc_joint" value="0"></div>
         </div>
 
-        <!-- إضافة إجراء جديد بالاتفاق -->
         <div style="margin-top:15px; border-top:1px dashed #cbd5e1; padding-top:12px;">
           <h5 style="margin:0 0 8px 0; color:#334155;">+ توصيف إجراء جديد أو فحص مستحدث (أجر بالاتفاق):</h5>
           <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
             <div class="form-group" style="flex:2; min-width:200px;">
-              <label>اسم الإجراء الجديد (مثال: بذل مفصل / غسيل أذن / فحص قاع عين):</label>
+              <label>اسم الإجراء الجديد:</label>
               <input type="text" id="new_custom_name" placeholder="اكتب اسم الإجراء المستحدث">
             </div>
             <div class="form-group" style="flex:1; min-width:120px;">
@@ -367,7 +441,6 @@
 
   <div id="tab-sheet" class="card"><h3>كشف الحساب والتقرير الفردي</h3></div>
   <div id="tab-summary" class="card"><h3>مسير الأتعاب المجمع</h3></div>
-  <div id="tab-daily" class="card"><h3>تسجيل الحركات اليومية</h3></div>
   <div id="tab-adjustments" class="card"><h3>تسجيل الاستقطاعات والبدلات</h3></div>
 </div>
 
@@ -379,6 +452,10 @@
   let appUsersList = [];
   let currentUser = null;
   let customProceduresList = [];
+  let doctorsList = [];
+  let activeDoctorContract = null;
+  let activeDoctorSurgeryRates = [];
+  let activeDoctorProcedures = [];
 
   function adjustTheatreFields(role) {
     if (role === 'SURGEON') {
@@ -389,6 +466,166 @@
       document.getElementById('surgeon-matrix-box').style.display = 'none';
       document.getElementById('flat-anesthesia-box').style.display = 'block';
       document.getElementById('theatre-title').innerText = '3. أتعاب التخدير / المساعدة المقطوعة للعمليات';
+    }
+  }
+
+  function toggleActivityType(type) {
+    document.getElementById('box-act-surgery').style.display = (type === 'surgery') ? 'block' : 'none';
+    document.getElementById('box-act-procedure').style.display = (type === 'procedure') ? 'block' : 'none';
+    document.getElementById('box-act-clinic').style.display = (type === 'clinic') ? 'block' : 'none';
+    document.getElementById('box-act-shift').style.display = (type === 'shift') ? 'block' : 'none';
+  }
+
+  async function loadDoctorContractRates(docId) {
+    if (!docId) return;
+    activeDoctorContract = doctorsList.find(d => d.id == docId);
+
+    const [surgRes, procRes] = await Promise.all([
+      client.from('doctor_surgery_rates').select('*').eq('doctor_id', docId),
+      client.from('doctor_procedure_rates').select('*').eq('doctor_id', docId)
+    ]);
+
+    activeDoctorSurgeryRates = surgRes.data || [];
+    activeDoctorProcedures = procRes.data || [];
+
+    // تعبئة قائمة الإجراءات والفحوصات الاتفاقية للطبيب
+    const procSelect = document.getElementById('act_proc_select');
+    if (activeDoctorProcedures.length > 0) {
+      procSelect.innerHTML = activeDoctorProcedures.map(p => 
+        `<option value="${p.fee_amount}">${p.service_name} (${p.is_custom ? 'أجر بالاتفاق: ' : ''}${p.fee_amount} ج.م)</option>`
+      ).join('');
+      document.getElementById('act_proc_fee').value = activeDoctorProcedures[0].fee_amount;
+    } else {
+      procSelect.innerHTML = '<option value="0">لا توجد إجراءات مسجلة بعقد هذا الطبيب</option>';
+      document.getElementById('act_proc_fee').value = 0;
+    }
+
+    // تجهيز قيم العيادات والشفتات
+    if (activeDoctorContract) {
+      document.getElementById('act_clinic_pct_display').value = activeDoctorContract.clinic_share_pct || 50;
+      document.getElementById('act_shift_rate_display').value = activeDoctorContract.base_shift_rate || 0;
+      calculateClinicShare();
+      calculateShiftTotal();
+    }
+
+    calculateAutoSurgeryFee();
+  }
+
+  function calculateAutoSurgeryFee() {
+    if (!activeDoctorContract) return;
+
+    // إذا كان تخدير أو مساعد
+    if (activeDoctorContract.role_in_theatre !== 'SURGEON') {
+      const level = document.getElementById('act_surg_level').value;
+      const isMajorOrAbove = ['MAJOR', 'ADVANCED', 'SPECIAL_NATURE', 'HIGH_SKILL'].includes(level);
+      document.getElementById('act_surg_fee').value = isMajorOrAbove ? 1500 : 800;
+      return;
+    }
+
+    // إذا كان جراحاً رئيسياً (مصفوفة الـ 7 مستويات والجنسية)
+    const level = document.getElementById('act_surg_level').value;
+    const nat = document.getElementById('act_surg_nat').value;
+
+    const matchedRate = activeDoctorSurgeryRates.find(r => r.operation_level === level && r.nationality_category === nat);
+    if (matchedRate) {
+      document.getElementById('act_surg_fee').value = matchedRate.fee_amount;
+    } else {
+      document.getElementById('act_surg_fee').value = 0;
+    }
+  }
+
+  function applyProcedureFee(fee) {
+    document.getElementById('act_proc_fee').value = parseFloat(fee) || 0;
+  }
+
+  function calculateClinicShare() {
+    const total = parseFloat(document.getElementById('act_clinic_total').value) || 0;
+    const cons = parseFloat(document.getElementById('act_clinic_consumables').value) || 0;
+    const pct = parseFloat(document.getElementById('act_clinic_pct_display').value) || 50;
+    const isNet = activeDoctorContract && activeDoctorContract.clinic_calculation_type === 'NET_AFTER_CONSUMABLES';
+
+    const base = isNet ? Math.max(0, total - cons) : total;
+    document.getElementById('act_clinic_share').value = (base * (pct / 100)).toFixed(2);
+  }
+
+  function calculateShiftTotal() {
+    const days = parseFloat(document.getElementById('act_shift_days').value) || 1;
+    const rate = parseFloat(document.getElementById('act_shift_rate_display').value) || 0;
+    document.getElementById('act_shift_total').value = (days * rate).toFixed(2);
+  }
+
+  async function saveAutoDailyMovement(e) {
+    e.preventDefault();
+    const docId = parseInt(document.getElementById('act_doctor').value);
+    const date = document.getElementById('act_date').value;
+    const type = document.getElementById('act_main_type').value;
+    const fileNo = document.getElementById('act_file_no').value || '-';
+    const patientName = document.getElementById('act_patient_name').value || 'مريض';
+    const msg = document.getElementById('auto-act-msg');
+
+    try {
+      if (type === 'surgery') {
+        const sLevel = document.getElementById('act_surg_level').options[document.getElementById('act_surg_level').selectedIndex].text;
+        const sNat = document.getElementById('act_surg_nat').options[document.getElementById('act_surg_nat').selectedIndex].text;
+        const sName = document.getElementById('act_surg_name').value || 'عملية جراحية';
+        const fee = parseFloat(document.getElementById('act_surg_fee').value) || 0;
+
+        await client.from('surgical_procedures').insert([{
+          doctor_id: docId,
+          procedure_date: date,
+          patient_file_number: fileNo,
+          patient_name: patientName,
+          procedure_name: `${sName} [${sLevel} - ${sNat}]`,
+          category_name: 'جراحة',
+          doctor_share_amount: fee
+        }]);
+      } else if (type === 'procedure') {
+        const pSelect = document.getElementById('act_proc_select');
+        const pName = pSelect.options[pSelect.selectedIndex].text;
+        const fee = parseFloat(document.getElementById('act_proc_fee').value) || 0;
+
+        await client.from('surgical_procedures').insert([{
+          doctor_id: docId,
+          procedure_date: date,
+          patient_file_number: fileNo,
+          patient_name: patientName,
+          procedure_name: `إجراء/فحص: ${pName}`,
+          category_name: 'إجراءات وعيادات',
+          doctor_share_amount: fee
+        }]);
+      } else if (type === 'clinic') {
+        const total = parseFloat(document.getElementById('act_clinic_total').value) || 0;
+        const share = parseFloat(document.getElementById('act_clinic_share').value) || 0;
+
+        await client.from('clinic_visits').insert([{
+          doctor_id: docId,
+          visit_date: date,
+          patient_file_number: fileNo,
+          patient_name: patientName,
+          service_type: 'كشف عيادة خارجية',
+          total_amount: total,
+          doctor_share_amount: share
+        }]);
+      } else if (type === 'shift') {
+        const days = parseFloat(document.getElementById('act_shift_days').value) || 1;
+        const total = parseFloat(document.getElementById('act_shift_total').value) || 0;
+
+        await client.from('doctor_shifts').insert([{
+          doctor_id: docId,
+          shift_date: date,
+          shift_type: 'DAILY',
+          days_count: days,
+          shift_calculated_amount: total
+        }]);
+      }
+
+      msg.innerText = 'تم تسجيل الحركة واحتساب الأتعاب آلياً بناءً على اللائحة التعاقدية!';
+      msg.className = 'status-msg status-success';
+      msg.style.display = 'block';
+    } catch(err) {
+      msg.innerText = 'خطأ: ' + err.message;
+      msg.className = 'status-msg status-error';
+      msg.style.display = 'block';
     }
   }
 
@@ -473,6 +710,16 @@
     if (depts) {
       document.getElementById('cd_dept').innerHTML = depts.map(dp => `<option value="${dp.id}">${dp.name}</option>`).join('');
     }
+
+    const { data: docs } = await client.from('doctors').select('*').order('id', { ascending: false });
+    doctorsList = docs || [];
+
+    const docOptions = ['<option value="">-- اختر الطبيب --</option>'].concat(
+      doctorsList.map(d => `<option value="${d.id}">${d.full_name} (${d.doctor_code})</option>`)
+    ).join('');
+
+    document.getElementById('act_doctor').innerHTML = docOptions;
+    document.getElementById('act_date').value = new Date().toISOString().split('T')[0];
   }
 
   async function saveFullContract(e) {
@@ -481,7 +728,6 @@
     msg.style.display = 'none';
 
     try {
-      // 1. حفظ الطبيب الأساسي
       const docPayload = {
         doctor_code: document.getElementById('cd_code').value,
         full_name: document.getElementById('cd_name').value,
@@ -499,7 +745,6 @@
       if (docErr) throw docErr;
       const docId = savedDoc[0].id;
 
-      // 2. حفظ مصفوفة العمليات الـ 7 (إذا كان جراحاً)
       if (docPayload.role_in_theatre === 'SURGEON') {
         const levels = [
           { level: 'SIMPLE', prefix: 'm_simp' },
@@ -524,7 +769,6 @@
         await client.from('doctor_surgery_rates').insert(surgeryRows);
       }
 
-      // 3. حفظ الفحوصات والإجراءات الثابتة والجديدة بالاتفاق
       let procs = [
         { code: 'XRAY', name: 'أشعة عادية', val: parseFloat(document.getElementById('proc_xray').value) || 0, is_custom: false },
         { code: 'ULTRASOUND', name: 'سونار', val: parseFloat(document.getElementById('proc_us').value) || 0, is_custom: false },
@@ -538,7 +782,6 @@
         doctor_id: docId, service_code: p.code, service_name: p.name, fee_amount: p.val, is_custom: false
       }));
 
-      // دمج الإجراءات المخصصة بالاتفاق
       customProceduresList.forEach((cp, idx) => {
         procs.push({
           doctor_id: docId,
@@ -559,6 +802,7 @@
       document.getElementById('form-full-contract').reset();
       customProceduresList = [];
       renderCustomProcedures();
+      await init();
     } catch(err) {
       msg.innerText = 'خطأ: ' + err.message;
       msg.className = 'status-msg status-error';
